@@ -1,0 +1,3051 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Nodex — Coordination & Management Infra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500&family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="src/nodex3.css?v=20260426b">
+<!-- OCTO iframe integration: hide own topbar when embedded inside OCTO workbench -->
+<style>
+  html.in-octo-frame .topbar,
+  html.in-octo-frame #cursorDot,
+  html.in-octo-frame #versionToast { display: none !important; }
+  html.in-octo-frame body { padding-top: 0 !important; background: #FAF7F1 !important; }
+  html.in-octo-frame .page { padding-top: 28px !important; }
+  /* override Nodex's has-inverse-cursor cursor:none — system cursor must remain visible inside OCTO */
+  html.in-octo-frame,
+  html.in-octo-frame body,
+  html.in-octo-frame * { cursor: auto !important; }
+  html.in-octo-frame a,
+  html.in-octo-frame button,
+  html.in-octo-frame [role="button"],
+  html.in-octo-frame .chip,
+  html.in-octo-frame .eg,
+  html.in-octo-frame .btn,
+  html.in-octo-frame .btn-sm { cursor: pointer !important; }
+  html.in-octo-frame input,
+  html.in-octo-frame textarea,
+  html.in-octo-frame select { cursor: text !important; }
+  /* layout fixes for narrower iframe viewport */
+  /* tasks toolbar: stack tabs row + search row for predictable layout */
+  html.in-octo-frame .tasks-toolbar {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+  html.in-octo-frame .tasks-tabs {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    gap: 6px !important;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 4px 0 10px !important;
+    border-bottom: 1px solid rgba(11,18,32,0.08);
+    margin: 0 !important;
+  }
+  html.in-octo-frame .tt-tab {
+    white-space: nowrap;
+    padding: 7px 14px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    color: rgba(11,18,32,0.6) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1.2;
+  }
+  html.in-octo-frame .tt-tab:hover {
+    background: rgba(16,75,225,0.08) !important;
+    color: #104BE1 !important;
+  }
+  html.in-octo-frame .tt-tab:active { transform: scale(0.97); }
+  /* active = filled cobalt with white text */
+  html.in-octo-frame .tt-tab.active {
+    background: #104BE1 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 6px rgba(16,75,225,0.28);
+  }
+  html.in-octo-frame .tt-tab .tt-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(11,18,32,0.06);
+    color: rgba(11,18,32,0.55);
+    font-family: 'IBM Plex Mono', Menlo, monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+  html.in-octo-frame .tt-tab:hover .tt-count {
+    background: rgba(16,75,225,0.14);
+    color: #104BE1;
+  }
+  html.in-octo-frame .tt-tab.active .tt-count {
+    background: rgba(255,255,255,0.22) !important;
+    color: #FFFFFF !important;
+  }
+  html.in-octo-frame .tt-tab:focus-visible {
+    outline: 2px solid rgba(16,75,225,0.4);
+    outline-offset: 2px;
+  }
+  /* search row: own line, full-width input. Position the magnifying-glass SVG over the
+     left padding of the input — original CSS targets .tasks-search-ic but the markup
+     uses .tts-icon, so it never picks up. Re-anchor here. */
+  html.in-octo-frame .tasks-search {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    position: relative;
+    display: block;
+  }
+  html.in-octo-frame .tasks-search .tts-icon {
+    position: absolute !important;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: rgba(11,18,32,0.45);
+    pointer-events: none;
+    z-index: 1;
+  }
+  html.in-octo-frame .tasks-search input {
+    width: 100% !important;
+    padding: 9px 14px 9px 34px !important;
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif !important;
+    font-size: 13px !important;
+    background: #FFFDF9 !important;
+    border: 1px solid rgba(11,18,32,0.12) !important;
+    border-radius: 10px !important;
+    color: #0B1220 !important;
+    outline: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  html.in-octo-frame .tasks-search input:focus {
+    border-color: rgba(16,75,225,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(16,75,225,0.1);
+  }
+  html.in-octo-frame .tasks-search input::placeholder {
+    color: rgba(11,18,32,0.35);
+  }
+
+  /* ============= 个人档案 · me strip + grid + usage cards ============= */
+  html.in-octo-frame .me-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    background: #FFFDF9;
+    border: 1px solid rgba(11,18,32,0.1);
+    border-radius: 12px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  html.in-octo-frame .me-strip-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  html.in-octo-frame .me-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #104BE1;
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  html.in-octo-frame .me-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0B1220;
+  }
+  html.in-octo-frame .me-handle {
+    font-weight: 400;
+    color: rgba(11,18,32,0.5);
+    font-size: 13px;
+  }
+  html.in-octo-frame .me-plan {
+    font-size: 11.5px;
+    color: rgba(11,18,32,0.5);
+    margin-top: 2px;
+  }
+  html.in-octo-frame .me-strip-actions { display: flex; gap: 8px; }
+
+  html.in-octo-frame .me-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 900px) {
+    html.in-octo-frame .me-grid { grid-template-columns: 1fr; }
+  }
+  html.in-octo-frame .me-col { display: flex; flex-direction: column; gap: 18px; }
+
+  /* usage cards */
+  html.in-octo-frame .usage-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  html.in-octo-frame .usage-card {
+    background: #FFFDF9;
+    border: 1px solid rgba(11,18,32,0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  html.in-octo-frame .uc-label {
+    font-size: 11px;
+    color: rgba(11,18,32,0.55);
+    letter-spacing: 0.2px;
+  }
+  html.in-octo-frame .uc-value {
+    font-family: 'Fraunces', 'Noto Serif SC', serif;
+    font-size: 24px;
+    font-weight: 400;
+    color: #0B1220;
+    margin-top: 2px;
+    line-height: 1.1;
+    letter-spacing: -0.3px;
+  }
+  html.in-octo-frame .uc-meta {
+    font-size: 10.5px;
+    color: rgba(11,18,32,0.5);
+    margin-top: 4px;
+  }
+  html.in-octo-frame .uc-trend.up { color: #0E8E5C; font-weight: 500; }
+  html.in-octo-frame .uc-trend.down { color: #B42318; font-weight: 500; }
+
+  /* usage progress bar */
+  html.in-octo-frame .usage-progress {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(11,18,32,0.08);
+  }
+  html.in-octo-frame .up-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  html.in-octo-frame .up-bar {
+    height: 6px;
+    background: rgba(11,18,32,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  html.in-octo-frame .up-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #104BE1, #3B6AE6);
+    border-radius: 999px;
+  }
+  html.in-octo-frame .up-foot { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* kv-card (status pills inside API section) */
+  html.in-octo-frame .kv-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    background: #FFFDF9;
+    border: 1px solid rgba(11,18,32,0.08);
+    border-radius: 10px;
+  }
+  html.in-octo-frame .kv-card-l {
+    font-size: 10.5px;
+    color: rgba(11,18,32,0.55);
+    letter-spacing: 0.2px;
+  }
+  html.in-octo-frame .kv-card-v {
+    font-size: 13px;
+    color: #0B1220;
+    font-weight: 500;
+  }
+  html.in-octo-frame .dot-ok {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #0E8E5C;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* foldable section */
+  html.in-octo-frame .me-foldable {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(11,18,32,0.08);
+  }
+  html.in-octo-frame .me-foldable summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: rgba(11,18,32,0.6);
+    list-style: none;
+  }
+  html.in-octo-frame .me-foldable summary:hover { color: #104BE1; }
+  html.in-octo-frame .me-foldable summary::-webkit-details-marker { display: none; }
+
+  /* recent list */
+  html.in-octo-frame .recent-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  html.in-octo-frame .recent-list li {
+    display: grid;
+    grid-template-columns: 78px auto 1fr;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(11,18,32,0.06);
+    font-size: 12.5px;
+  }
+  html.in-octo-frame .recent-list li:last-child { border-bottom: 0; }
+  html.in-octo-frame .rl-time {
+    font-size: 10.5px;
+    color: rgba(11,18,32,0.45);
+    letter-spacing: 0.2px;
+  }
+  html.in-octo-frame .rl-name {
+    font-weight: 500;
+    color: #0B1220;
+    white-space: nowrap;
+  }
+  html.in-octo-frame .rl-task {
+    color: rgba(11,18,32,0.6);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* account-wrap (single column for account management) */
+  html.in-octo-frame .account-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* ============= mini-list (个人档案 · 共享团队 / 已雇佣 / 我创建) =============
+     原 CSS 用 grid-template-columns: auto 1fr auto — meta 列贪婪吞下所有内容宽度，
+     把 name 挤到换行。改成 name 不换行 + meta 可缩、垂直居中、去掉 uppercase。 */
+  html.in-octo-frame .mini-list li {
+    grid-template-columns: auto auto 1fr !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  html.in-octo-frame .mini-list .ml-name {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  html.in-octo-frame .mini-list .ml-meta {
+    min-width: 0;
+    text-transform: none !important;
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0 !important;
+    color: rgba(11,18,32,0.5) !important;
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  /* ============= AGENT BUILDER · steps 4-9 components ============= */
+  /* base form input override (we use class .form-input in new steps) */
+  html.in-octo-frame .form-input {
+    width: 100%;
+    padding: 9px 12px;
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif;
+    font-size: 13px;
+    background: #FFFDF9;
+    border: 1px solid rgba(11,18,32,0.14);
+    border-radius: 8px;
+    color: #0B1220;
+    outline: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  html.in-octo-frame .form-input:focus {
+    border-color: rgba(16,75,225,0.5);
+    box-shadow: 0 0 0 3px rgba(16,75,225,0.1);
+  }
+  html.in-octo-frame textarea.form-input { min-height: 70px; line-height: 1.55; }
+  html.in-octo-frame .form-input::placeholder { color: rgba(11,18,32,0.35); }
+
+  /* skills grid (step 5) */
+  html.in-octo-frame .skills-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  html.in-octo-frame .skill-chip {
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: #FFFDF9;
+    border: 1px solid rgba(11,18,32,0.14);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(11,18,32,0.7);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.06s;
+  }
+  html.in-octo-frame .skill-chip:hover {
+    background: rgba(16,75,225,0.06);
+    border-color: rgba(16,75,225,0.3);
+    color: #104BE1;
+  }
+  html.in-octo-frame .skill-chip:active { transform: scale(0.97); }
+  html.in-octo-frame .skill-chip.on {
+    background: #104BE1;
+    color: #FFFFFF;
+    border-color: #104BE1;
+    box-shadow: 0 1px 4px rgba(16,75,225,0.25);
+  }
+
+  /* upload row (step 6) */
+  html.in-octo-frame .upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 2px;
+    flex-wrap: wrap;
+  }
+  html.in-octo-frame .upload-meta {
+    font-size: 11.5px;
+    color: rgba(11,18,32,0.5);
+  }
+
+  /* row-2 already exists; ensure spacing is right inside builder-card */
+  html.in-octo-frame .builder-card .field { margin-bottom: 12px; }
+  html.in-octo-frame .builder-card .field:last-child { margin-bottom: 0; }
+  html.in-octo-frame .builder-card .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  html.in-octo-frame .builder-card .field label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: rgba(11,18,32,0.7);
+    margin-bottom: 6px;
+    letter-spacing: 0.1px;
+  }
+
+  /* builder-foot now sometimes has 3 buttons (back / shortcut / next) — left-align the back, right-align the rest */
+  html.in-octo-frame .builder-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  html.in-octo-frame .builder-foot .btn:first-child { margin-right: auto; }
+  html.in-octo-frame .tasks-meta, html.in-octo-frame [class*="hint"] { font-size: 11px; line-height: 1.5; }
+  html.in-octo-frame .set-row, html.in-octo-frame .row-flex,
+  html.in-octo-frame .row-actions, html.in-octo-frame .panel-row,
+  html.in-octo-frame .actions { flex-wrap: wrap !important; gap: 8px !important; }
+  html.in-octo-frame .btn, html.in-octo-frame .btn-sm { white-space: nowrap; }
+
+  /* cost-bar row variant (个人档案 § 费用 / 用量) — un-do the progress-bar height/overflow that
+     leaks from the earlier .cost-bar definition in nodex3.css. The row variant contains a <b>,
+     the progress-bar variant contains .cost-bar-fill — use :has() to disambiguate. */
+  html.in-octo-frame .cost-bar:has(b) {
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    padding-top: 14px !important;
+  }
+  html.in-octo-frame .cost-bar:has(b) > .flex { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* ============== STYLE ALIGNMENT WITH OCTO ============== */
+  /* match OCTO's typography: Inter + PingFang SC for body, Fraunces for hierarchy */
+  html.in-octo-frame body,
+  html.in-octo-frame .page,
+  html.in-octo-frame .step,
+  html.in-octo-frame .step-body,
+  html.in-octo-frame .nt-eyebrow,
+  html.in-octo-frame .nt-hint,
+  html.in-octo-frame label,
+  html.in-octo-frame button,
+  html.in-octo-frame input,
+  html.in-octo-frame textarea,
+  html.in-octo-frame select {
+    font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif !important;
+  }
+
+  /* serif titles for step headers (matches OCTO hero) */
+  html.in-octo-frame .step-title {
+    font-family: 'Fraunces', 'Noto Serif SC', 'Songti SC', serif !important;
+    font-weight: 400 !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  /* tone down ALL CAPS / mono section labels — keep them as soft eyebrows */
+  html.in-octo-frame .nt-eyebrow,
+  html.in-octo-frame .sub-head,
+  html.in-octo-frame [class*="eyebrow"],
+  html.in-octo-frame [class*="cb-head"] {
+    text-transform: none !important;
+    letter-spacing: 0.3px !important;
+    font-weight: 500 !important;
+  }
+
+  /* dispatch input card — softer, like OCTO's chat box */
+  html.in-octo-frame .nt-card,
+  html.in-octo-frame .form-card,
+  html.in-octo-frame [class*="card-input"] {
+    border-radius: 14px !important;
+    background: #FFFDF9 !important;
+    border: 1px solid rgba(11,18,32,0.14) !important;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02) !important;
+  }
+  /* hide the paper-hole pin decorations */
+  html.in-octo-frame .nt-card::before,
+  html.in-octo-frame .nt-card::after,
+  html.in-octo-frame .pin,
+  html.in-octo-frame .paper-hole { display: none !important; }
+
+  html.in-octo-frame .nt-input,
+  html.in-octo-frame textarea {
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+  }
+
+  /* buttons — OCTO-style rounding */
+  html.in-octo-frame .btn,
+  html.in-octo-frame .btn-sm,
+  html.in-octo-frame .btn-cobalt,
+  html.in-octo-frame .btn-cobalt-sm {
+    border-radius: 10px !important;
+    letter-spacing: 0.4px !important;
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif !important;
+  }
+
+  /* step container — softer card */
+  html.in-octo-frame .step {
+    border-radius: 12px !important;
+  }
+
+  /* page subtitle / meta — drop monospace */
+  html.in-octo-frame .brand-sub,
+  html.in-octo-frame .nt-hint,
+  html.in-octo-frame .tq-sub,
+  html.in-octo-frame .hint {
+    font-family: 'Inter', 'PingFang SC', system-ui, sans-serif !important;
+    font-size: 12.5px !important;
+    color: rgba(11,18,32,0.55) !important;
+  }
+
+  /* PRESERVE memo board sticker character — don't override */
+  /* (.memo-card / .task-memo / .sticker keep their original cobalt/pink/cream sticky-note styling) */
+
+  /* PRESERVE workshop isometric room SVG — visual untouched */
+  /* PRESERVE step-num pill rounded badges */
+</style>
+<script>
+  // Run as early as possible — before any paint
+  (function(){
+    try {
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-octo-frame');
+      }
+    } catch(e) {
+      // cross-origin throws → we ARE in a frame
+      document.documentElement.classList.add('in-octo-frame');
+    }
+  })();
+</script>
+<template id="__bundler_thumbnail" data-bg-color="#F5EFDB">
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+    <!-- cobalt bg block -->
+    <rect x="40" y="40" width="120" height="120" fill="#1B3FE5"/>
+    <!-- pixel N monogram (scaled up from 7x7) -->
+    <g fill="#F5EFDB">
+      <!-- left column -->
+      <rect x="60" y="60" width="12" height="80"/>
+      <!-- right column -->
+      <rect x="128" y="60" width="12" height="80"/>
+      <!-- diagonal steps -->
+      <rect x="72" y="72" width="12" height="12"/>
+      <rect x="84" y="84" width="12" height="12"/>
+      <rect x="96" y="96" width="12" height="12"/>
+      <rect x="108" y="108" width="12" height="12"/>
+      <rect x="116" y="120" width="12" height="12"/>
+    </g>
+  </svg>
+</template>
+</head>
+<body>
+
+<!-- custom inverse-cursor dot -->
+<div id="cursorDot" aria-hidden="true"></div>
+
+<!-- ========================= TOP BAR ========================= -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo" aria-label="Nodex">
+      <!-- Pixel N monogram, 7x7 grid -->
+      <svg viewBox="0 0 7 7" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+        <rect x="0" y="0" width="1" height="7"/>
+        <rect x="6" y="0" width="1" height="7"/>
+        <rect x="1" y="1" width="1" height="1"/>
+        <rect x="2" y="2" width="1" height="1"/>
+        <rect x="3" y="3" width="1" height="1"/>
+        <rect x="4" y="4" width="1" height="1"/>
+        <rect x="5" y="5" width="1" height="1"/>
+      </svg>
+    </div>
+    <div class="brand-meta">
+      <div class="brand-title-row">
+        <span class="brand-name" data-page-title>首页</span>
+        <span class="brand-version">[ v0.8.5 <span class="sq">·</span> TT <span class="sq">·</span> local <span class="sq">·</span> 2026-04-05 20:00 GMT-4 ]</span>
+      </div>
+      <div class="brand-sub" data-page-sub>提交意图 · 招募 agents · 受控交付</div>
+    </div>
+  </div>
+
+  <nav class="topnav">
+    <a href="#/home" data-nav="home" class="active">首页</a>
+    <a href="#/new-task" data-nav="new-task">新任务</a>
+    <a href="#/tasks" data-nav="tasks">任务列表</a>
+
+    <!-- + Agent dropdown -->
+    <div class="tn-drop" data-drop="agent">
+      <button class="tn-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+        <span class="tn-plus">+</span>Agent <span class="tn-caret">▾</span>
+      </button>
+      <div class="tn-menu" role="menu">
+        <a class="tn-mi" href="#/builder" data-nav="builder" role="menuitem">
+          <span class="tn-mi-title">创建 agent</span>
+          <span class="tn-mi-sub">定义身份、技能、权限。</span>
+        </a>
+        <a class="tn-mi" href="#/store" data-nav="store" role="menuitem">
+          <span class="tn-mi-title">雇佣 agent</span>
+          <span class="tn-mi-sub">浏览公共商城。</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Menu dropdown (About / Contact / FAQ) -->
+    <div class="tn-drop" data-drop="menu">
+      <button class="tn-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+        菜单 <span class="tn-caret">▾</span>
+      </button>
+      <div class="tn-menu" role="menu">
+        <a class="tn-mi" href="#/about" data-nav="about" role="menuitem">
+          <span class="tn-mi-title">关于</span>
+          <span class="tn-mi-sub">Nodex 是什么、为谁而做。</span>
+        </a>
+        <a class="tn-mi" href="#/contact" data-nav="contact" role="menuitem">
+          <span class="tn-mi-title">联系我们</span>
+          <span class="tn-mi-sub">与团队取得联系。</span>
+        </a>
+        <a class="tn-mi" href="#/faq" data-nav="faq" role="menuitem">
+          <span class="tn-mi-title">常见问题</span>
+          <span class="tn-mi-sub">常见问题解答。</span>
+        </a>
+      </div>
+    </div>
+
+    <button class="tn-item tn-dark" id="themeToggle">深色模式</button>
+
+    <!-- Avatar → settings -->
+    <a href="#/settings" data-nav="settings" class="tn-avatar" aria-label="打开设置（rlx417）" title="设置 · rlx417">
+      <span class="tn-avatar-init">R</span>
+    </a>
+  </nav>
+</header>
+
+<!-- ========================= HOME (Nodex marketing) ========================= -->
+<section class="page active" data-page="home"
+  data-title="首页" data-sub="提交意图 · 招募 agents · 受控交付">
+
+  <div class="home-wrap">
+
+    <div class="home-hero">
+      <!-- LEFT: hero copy -->
+      <div class="home-left">
+        <h1 class="stencil-hero" aria-label="Find. Trust. Ship.">
+          <span class="s-line"><span class="dot-text">FIND.</span></span>
+          <span class="s-line"><span class="dot-text">TRUST.</span></span>
+          <span class="s-line"><span class="solid-text">SHIP.</span></span>
+        </h1>
+
+        <p class="home-lede">
+          Nodex coordinates the agents that already live in your design org —
+          traceable to the chapter, approved at the cost line, reversible by the minute.
+        </p>
+
+        <div class="home-cta-row">
+          <button class="btn-cobalt" onclick="goToTask('enter')">派发任务 <span class="arr">→</span></button>
+        </div>
+      </div>
+
+      <!-- RIGHT: interactive cobalt dot-network (agents collaborating) -->
+      <div class="home-right" aria-hidden="true">
+        <canvas id="dotnet" class="dotnet" width="560" height="560"></canvas>
+      </div>
+
+      <!-- scroll cue pinned at the bottom of the hero -->
+        </div>
+
+    <div class="home-rule" style="display:none"></div>
+
+  </div>
+</section>
+
+<!-- ========================= NEW TASK ========================= -->
+<section class="page" data-page="new-task"
+  data-title="新任务" data-sub="描述你的意图，OCTO 会自动路由给合适的 agents">
+  <div class="newtask-wrap">
+    <div class="newtask-inner">
+
+      <div class="newtask-eyebrow">
+        <span class="sq"></span>
+        <span>§ 派发 — 输入你的意图</span>
+        <span class="nt-hint">按 ↵ 派发</span>
+      </div>
+
+      <form class="home-card newtask-card" onsubmit="event.preventDefault(); goToTask();">
+        <textarea class="home-input" id="homePrompt" rows="5"
+          placeholder="例如：分析 50 份财务记录并生成报告 · 研究 Q2 市场信号 · 起草 UX 文案…"
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); goToTask(); }"></textarea>
+        <div class="home-card-foot">
+          <div class="home-chips">
+            <span class="chip">自动选择 agents</span>
+            <span class="chip">限额 · ¥36</span>
+            <span class="chip">中等风险</span>
+          </div>
+          <button class="btn-cobalt btn-cobalt-sm" type="submit">派发任务 <span class="arr">→</span></button>
+        </div>
+      </form>
+
+      <div class="newtask-examples-label">或从示例开始</div>
+      <div class="home-examples">
+        <button class="eg" onclick="useExample(this)">
+          <span class="eg-num">01</span>
+          <span class="eg-text">分析 50 份财务记录的支出模式</span>
+          <span class="arr">→</span>
+        </button>
+        <button class="eg" onclick="useExample(this)">
+          <span class="eg-num">02</span>
+          <span class="eg-text">为一款新的分析工具起草产品定位简报</span>
+          <span class="arr">→</span>
+        </button>
+        <button class="eg" onclick="useExample(this)">
+          <span class="eg-num">03</span>
+          <span class="eg-text">调研中端 SaaS 竞品的定价策略</span>
+          <span class="arr">→</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+    
+    <div class="bio-band" aria-hidden="true">
+      <span class="bio b1"><svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="4" y="0" width="4" height="1"/><rect x="2" y="1" width="8" height="1"/><rect x="1" y="2" width="9" height="1"/><rect x="1" y="3" width="10" height="1"/><rect x="0" y="4" width="10" height="1"/><rect x="0" y="5" width="10" height="1"/><rect x="1" y="6" width="9" height="1"/><rect x="1" y="7" width="2" height="1"/><rect x="4" y="7" width="3" height="1"/><rect x="8" y="7" width="2" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/></svg></span>
+      <span class="bio b2"><svg viewBox="0 0 10 12" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="3" y="0" width="4" height="1"/><rect x="2" y="1" width="6" height="1"/><rect x="1" y="2" width="8" height="1"/><rect x="0" y="3" width="10" height="1"/><rect x="0" y="4" width="10" height="1"/><rect x="1" y="5" width="2" height="1"/><rect x="4" y="5" width="2" height="1"/><rect x="7" y="5" width="2" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="1" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/></svg></span>
+      <span class="bio b3"><svg viewBox="0 0 8 10" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="2" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="1" y="2" width="6" height="1"/><rect x="0" y="3" width="7" height="1"/><rect x="0" y="4" width="8" height="1"/><rect x="0" y="5" width="8" height="1"/><rect x="0" y="6" width="8" height="1"/><rect x="0" y="7" width="7" height="1"/><rect x="1" y="8" width="2" height="1"/><rect x="4" y="8" width="2" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/></svg></span>
+      <span class="bio b4"><svg viewBox="0 0 8 10" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="2" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="2" y="1" width="4" height="1"/><rect x="1" y="2" width="6" height="1"/><rect x="1" y="3" width="2" height="1"/><rect x="4" y="3" width="2" height="1"/><rect x="1" y="4" width="6" height="1"/><rect x="1" y="5" width="6" height="1"/><rect x="1" y="6" width="6" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/></svg></span>
+      <span class="bio b5"><svg viewBox="0 0 12 8" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="5" y="0" width="2" height="1"/><rect x="4" y="1" width="4" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="7" y="2" width="1" height="1"/><rect x="2" y="3" width="7" height="1"/><rect x="1" y="4" width="10" height="1"/><rect x="0" y="5" width="12" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/></svg></span>
+      <span class="bio b6"><svg viewBox="0 0 14 6" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><rect x="2" y="0" width="2" height="1"/><rect x="1" y="1" width="10" height="1"/><rect x="0" y="2" width="12" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="10" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/></svg></span>
+    </div>
+</section>
+
+<!-- ========================= LOGIN ========================= -->
+<section class="page" data-page="login"
+  data-title="欢迎回来" data-sub="登录你的 Nodex 工作区。">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h2>欢迎回来</h2>
+      <p>登录你的 Nodex 工作区。</p>
+      <form onsubmit="event.preventDefault(); nav('home');">
+        <div class="field">
+          <label>邮箱</label>
+          <input type="email" placeholder="you@company.com" value="chunyu_sh@gsd.harvard.edu" />
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input type="password" placeholder="••••••••" />
+        </div>
+        <div class="flex-between mt-16">
+          <span class="muted" style="font-size:11px;">忘记密码？</span>
+          <button class="btn btn-primary" type="submit">登录 →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= TASKS LIST ========================= -->
+<section class="page" data-page="tasks" data-screen-label="Tasks"
+  data-title="任务列表" data-sub="跟踪任务、管理账户设置">
+  <div class="container">
+    <div class="tasks-head">
+      <div class="s-label">任务 · 便签板</div>
+      <button class="btn btn-primary btn-sm" onclick="nav('new-task')">+ 新任务</button>
+    </div>
+
+    <!-- Filter + search bar -->
+    <div class="tasks-toolbar">
+      <div class="tasks-tabs" role="tablist">
+        <button class="tt-tab active" data-filter="all" role="tab" aria-selected="true">全部 <span class="tt-count" data-count="all">0</span></button>
+        <button class="tt-tab" data-filter="finished" role="tab">已完成 <span class="tt-count" data-count="finished">0</span></button>
+        <button class="tt-tab" data-filter="needs" role="tab">需审批 <span class="tt-count" data-count="needs">0</span></button>
+        <button class="tt-tab" data-filter="working" role="tab">进行中 <span class="tt-count" data-count="working">0</span></button>
+      </div>
+      <label class="tasks-search">
+        <svg class="tts-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input id="taskSearch" type="search" placeholder="搜索任务、agent、任务 ID…" autocomplete="off"/>
+        <span class="tts-hint" id="taskSearchHint"></span>
+      </label>
+    </div>
+
+    <div class="sticker-wall-head">
+      <span class="hint">拖拽重排 · 点击打开 · 新便签贴在最上层</span>
+    </div>
+
+    <div class="sticker-wall" id="stickerWall">
+
+      <div class="sticker finished" style="--tilt:-2.4deg;" data-nav="task" data-id="T-0248">
+        <div class="sticker-eyebrow"><span class="tid">#T-0248</span><span>2 小时前</span></div>
+        <h3 class="sticker-title">分析 50 份财务记录的支出模式</h3>
+        <div class="sticker-agents" aria-label="3 个 agent 参与">
+          <span class="sa" data-name="ckc_analyst">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#F4EED8"/><rect x="6" y="3" width="1" height="1" fill="#F4EED8"/><rect x="2" y="5" width="6" height="2"/><rect x="2" y="7" width="2" height="1"/><rect x="6" y="7" width="2" height="1"/></g></svg>
+          </span>
+          <span class="sa" data-name="trial_analysis">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="4" y="0" width="1" height="2"/><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#F4EED8"/><rect x="6" y="3" width="1" height="1" fill="#F4EED8"/><rect x="2" y="5" width="6" height="2"/><rect x="1" y="6" width="1" height="2"/><rect x="8" y="6" width="1" height="2"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/></g></svg>
+          </span>
+          <span class="sa" data-name="report_drafter">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="2" y="1" width="6" height="1"/><rect x="1" y="2" width="8" height="3"/><rect x="3" y="3" width="1" height="1" fill="#F4EED8"/><rect x="6" y="3" width="1" height="1" fill="#F4EED8"/><rect x="1" y="5" width="8" height="2"/><rect x="2" y="7" width="2" height="1"/><rect x="6" y="7" width="2" height="1"/></g></svg>
+          </span>
+        </div>
+        <div class="sticker-meta">
+          <div class="row"><span class="sticker-status">已完成</span></div>
+          <div class="row">3 个 agent · 已花费 ¥1.72</div>
+        </div>
+      </div>
+
+      <div class="sticker finished" style="--tilt:1.8deg;" data-nav="task" data-id="T-0247">
+        <div class="sticker-eyebrow"><span class="tid">#T-0247</span><span>昨天</span></div>
+        <h3 class="sticker-title">为产品团队起草 Q2 路线图备忘录</h3>
+        <div class="sticker-agents" aria-label="2 个 agent 参与">
+          <span class="sa" data-name="roadmap_writer">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#F4EED8"/><rect x="6" y="3" width="1" height="1" fill="#F4EED8"/><rect x="2" y="5" width="6" height="2"/><rect x="2" y="7" width="2" height="1"/><rect x="6" y="7" width="2" height="1"/></g></svg>
+          </span>
+          <span class="sa" data-name="team_reviewer">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="2" y="0" width="6" height="1"/><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#F4EED8"/><rect x="6" y="3" width="1" height="1" fill="#F4EED8"/><rect x="2" y="5" width="6" height="2"/><rect x="1" y="7" width="2" height="1"/><rect x="7" y="7" width="2" height="1"/></g></svg>
+          </span>
+        </div>
+        <div class="sticker-meta">
+          <div class="row"><span class="sticker-status">已完成</span></div>
+          <div class="row">2 个 agent · 已花费 ¥0.79</div>
+        </div>
+      </div>
+
+      <div class="sticker working" style="--tilt:-1.1deg;" data-nav="task-hitl" data-id="T-0251">
+        <div class="sticker-eyebrow"><span class="tid">#T-0251</span><span>已运行 3 分钟</span></div>
+        <h3 class="sticker-title">调研中端 SaaS 竞品的定价策略</h3>
+        <div class="sticker-agents" aria-label="2 个 agent 正在运行">
+          <span class="sa live" data-name="market_scout">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="4" y="0" width="1" height="2"/><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#FCE9B8"/><rect x="6" y="3" width="1" height="1" fill="#FCE9B8"/><rect x="2" y="5" width="6" height="2"/><rect x="2" y="7" width="2" height="1"/><rect x="6" y="7" width="2" height="1"/></g></svg>
+          </span>
+          <span class="sa live" data-name="price_extractor">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="3" y="1" width="4" height="1"/><rect x="2" y="2" width="6" height="3"/><rect x="3" y="3" width="1" height="1" fill="#FCE9B8"/><rect x="6" y="3" width="1" height="1" fill="#FCE9B8"/><rect x="2" y="5" width="6" height="2"/><rect x="1" y="6" width="1" height="2"/><rect x="8" y="6" width="1" height="2"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/></g></svg>
+          </span>
+        </div>
+        <div class="sticker-meta">
+          <div class="row"><span class="sticker-status">进行中</span></div>
+          <div class="row">2 个 agent · 已花费 ¥0.29</div>
+        </div>
+      </div>
+
+      <div class="sticker needs" style="--tilt:2.9deg;" data-nav="task-hitl" data-id="T-0252">
+        <div class="sticker-eyebrow"><span class="tid">#T-0252</span><span>等待 12 分钟</span></div>
+        <h3 class="sticker-title">撰写新用户引导文案的多个版本（待你审阅）</h3>
+        <div class="sticker-agents" aria-label="1 个 agent 等待你的审阅">
+          <span class="sa" data-name="copy_author">
+            <svg viewBox="0 0 10 10" width="22" height="22"><g fill="currentColor"><rect x="2" y="1" width="6" height="1"/><rect x="1" y="2" width="8" height="3"/><rect x="3" y="3" width="1" height="1" fill="#D3DEF9"/><rect x="6" y="3" width="1" height="1" fill="#D3DEF9"/><rect x="1" y="5" width="8" height="2"/><rect x="2" y="7" width="2" height="1"/><rect x="6" y="7" width="2" height="1"/></g></svg>
+          </span>
+        </div>
+        <div class="sticker-meta">
+          <div class="row"><span class="sticker-status">需审批</span></div>
+          <div class="row">1 个 agent · 等待审批</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========================= TASK DETAIL (completed) ========================= -->
+<section class="page" data-page="task"
+  data-title="任务详情" data-sub="本任务的时间线、agent 与回执。">
+  <div class="container">
+    <div class="detail-grid">
+      <aside class="detail-side">
+        <div class="side-block">
+          <h4>已花费</h4>
+          <div class="cost-head">
+            <span class="cost-spent">¥2.30</span>
+            <span class="cost-sep">/</span>
+            <span class="cost-budget">¥36.00</span>
+          </div>
+          <div class="cost-bar" title="已使用预算的 6%"><div class="cost-bar-fill" style="width:6%;"></div></div>
+          <div class="cost-pct">已用 6% · 剩余 ¥33.70</div>
+          <div class="kv-grid">
+            <div class="kv-cell"><span class="kv-label">耗时</span><span class="kv-value">02:34:10</span></div>
+            <div class="kv-cell"><span class="kv-label">调用次数</span><span class="kv-value">12</span></div>
+            <div class="kv-cell"><span class="kv-label">下一步预估</span><span class="kv-value">¥0.65</span></div>
+            <div class="kv-cell"><span class="kv-label">优惠后</span><span class="kv-value">¥0.58</span></div>
+          </div>
+        </div>
+        <div class="side-block">
+          <h4>已雇佣的 agent</h4>
+          <div class="kv"><b>+ Agent</b><span class="muted">添加更多</span></div>
+          <div class="muted" style="font-size:11px;">暂未固定其他 agent。</div>
+        </div>
+        <div class="side-block">
+          <h4>选择的模型</h4>
+          <div class="field" style="margin-bottom:8px;">
+            <select class="store-select" style="width:100%;">
+              <optgroup label="Anthropic">
+                <option>Claude Opus 4.1</option>
+                <option>Claude Sonnet 4.5</option>
+                <option selected>Claude Haiku 4.5</option>
+              </optgroup>
+              <optgroup label="OpenAI">
+                <option>GPT-5</option>
+                <option>GPT-4o</option>
+                <option>GPT-4.1</option>
+                <option>o3</option>
+                <option>o4-mini</option>
+              </optgroup>
+              <optgroup label="Google">
+                <option>Gemini 2.5 Pro</option>
+                <option>Gemini 2.5 Flash</option>
+              </optgroup>
+              <optgroup label="xAI">
+                <option>Grok 4</option>
+              </optgroup>
+              <optgroup label="Meta">
+                <option>Llama 4 Maverick</option>
+                <option>Llama 4 Scout</option>
+              </optgroup>
+              <optgroup label="Mistral">
+                <option>Mistral Large 2</option>
+              </optgroup>
+              <optgroup label="DeepSeek">
+                <option>DeepSeek V3</option>
+                <option>DeepSeek R1</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:6px;">
+            <label style="font-size:10.5px;">API Key</label>
+            <div class="apikey-row">
+              <input type="password" id="apiKeyInput" value="sk-ant-••••••••••••••••••••••••" class="apikey-input" autocomplete="off" />
+              <button type="button" class="btn btn-sm apikey-toggle" onclick="(function(b){var i=document.getElementById('apiKeyInput'); var hid=i.type==='password'; i.type=hid?'text':'password'; b.textContent=hid?'隐藏':'显示';})(this)">显示</button>
+            </div>
+          </div>
+          <div class="mt-12" style="display:flex; gap:6px;">
+            <button class="btn btn-sm btn-primary">保存并使用</button>
+            <button class="btn btn-sm">测试 Key</button>
+          </div>
+          <div class="hint" style="margin-top:10px;">推荐：使用你的 Claude / GPT key。保存后可启用实时运行。</div>
+        </div>
+      </aside>
+
+      <main class="detail-main">
+        <div class="tq-card">
+          <div class="tq-eyebrow">§ 任务 · #T-0248</div>
+          <h1 class="tq-title">分析 50 份财务记录的支出模式，并生成详细报告。</h1>
+          <div class="tq-sub">已完成 · 雇佣 3 个 agent · 2 小时前交付</div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num done">1</span> 理解你的需求</div>
+            <span class="step-pill done">摘要就绪</span>
+          </div>
+          <div class="step-body">
+            已识别为财务模式分析 + 报告生成任务。在第 3 步等待你的决定。
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num done">2</span> 拆解为子任务</div>
+            <span class="step-pill count">3 个子任务</span>
+          </div>
+          <div class="step-body">
+            <ul style="margin:0; padding-left:18px;">
+              <li>导入 50 条记录 → 规范化条目</li>
+              <li>聚类支出类别并标记异常项</li>
+              <li>起草报告：3 条洞察 + 1 条建议</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num done">3</span> 推荐 agents</div>
+            <span class="step-pill count">已选 2 个</span>
+          </div>
+          <div class="step-body">
+            已雇佣 <b>ckc_analyst_worker</b> 与 <b>trial_analysis_user_9758f932</b>。均已接受。
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num focus">4</span> 运行 & 校验</div>
+            <span class="step-pill done">回执已附</span>
+          </div>
+          <div class="step-body">
+            <div class="run-viz" aria-hidden="true">
+              <div class="run-viz-eyebrow">
+                <span class="sq"></span>
+                <span>§ 工作台 — 本任务有 3 个 agent</span>
+                <span class="viz-live">● 实时</span>
+              </div>
+              <svg class="run-viz-svg" viewBox="30 40 650 480" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <!-- Iso floor grid: unit=32, dx=27.7, dy=16 -->
+                  <pattern id="vizFloorGrid" width="55.4" height="32" patternUnits="userSpaceOnUse" patternTransform="translate(270 250)">
+                    <path d="M0 0 L55.4 32 M55.4 0 L0 32" stroke="#1B3FE5" stroke-width="0.4" opacity="0.18" fill="none"/>
+                  </pattern>
+                  <!-- brick pattern for left wall -->
+                  <pattern id="vizBrick" width="44" height="32" patternUnits="userSpaceOnUse" patternTransform="skewY(30)">
+                    <path d="M0 0 L44 0 M0 16 L44 16 M22 0 L22 16 M0 16 L0 32 M44 16 L44 32" stroke="#1B3FE5" stroke-width="0.35" opacity="0.22" fill="none"/>
+                  </pattern>
+                </defs>
+
+                <!-- ============ ROOM ============
+                     Origin (270,250). unit=32. 8×8 room, 6u tall walls.
+                     Floor: back(270,250) right(492,378) front(270,506) left(48,378)
+                     Ridge top (back corner, up 6u): (270, 58)
+                -->
+                <g fill="none" stroke="#1B3FE5" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+                  <!-- Floor -->
+                  <polygon points="270,250 492,378 270,506 48,378" fill="#F5EFDB"/>
+                  <polygon points="270,250 492,378 270,506 48,378" fill="url(#vizFloorGrid)"/>
+
+                  <!-- Left wall -->
+                  <polygon points="48,378 270,250 270,58 48,186" fill="#FBF6E7" opacity="0.62"/>
+                  <!-- Right wall -->
+                  <polygon points="270,250 492,378 492,186 270,58" fill="#FBF6E7" opacity="0.48"/>
+                  <!-- Back vertical ridge -->
+                  <line x1="270" y1="58" x2="270" y2="250" stroke-width="1"/>
+                  <!-- Wall top edges -->
+                  <line x1="48" y1="186" x2="270" y2="58"/>
+                  <line x1="270" y1="58" x2="492" y2="186"/>
+                  <!-- Wall base edges (also floor edges) -->
+                  <line x1="48" y1="378" x2="270" y2="250"/>
+                  <line x1="270" y1="250" x2="492" y2="378"/>
+
+                  <!-- Baseboard strips -->
+                  <line x1="48" y1="378" x2="270" y2="250" stroke-width="0.6" opacity="0.5" transform="translate(0 -4)"/>
+                  <line x1="270" y1="250" x2="492" y2="378" stroke-width="0.6" opacity="0.5" transform="translate(0 -4)"/>
+
+                  <!-- Ceiling beams (hint) -->
+                  <line x1="270" y1="58" x2="159" y2="122" stroke-width="0.5" opacity="0.35"/>
+                  <line x1="270" y1="58" x2="381" y2="122" stroke-width="0.5" opacity="0.35"/>
+                </g>
+
+                <!-- ============ LEFT WALL DETAILS ============ -->
+                <!-- Window on left wall (iso projection: x=0 plane, y 1.5→3.5, height 2→4 u)
+                     Left-wall mapping: point (0, y, h) = (270 - y*27.7, 250 + y*16 - h*32) hmm actually left wall is at x=0
+                     back-left edge goes from (270,250) @ y=0 down-left to (48,378) @ y=8
+                     Vertical lift keeps x same, subtracts 32 per unit.
+                     So (0, 1.5, 4) = (270 - 1.5*27.7, 250 + 1.5*16 - 4*32) = (228.5, 146)
+                     (0, 3.5, 4) = (173, 178)
+                     (0, 3.5, 2) = (173, 242)
+                     (0, 1.5, 2) = (228.5, 210)
+                -->
+                <g fill="none" stroke="#1B3FE5" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+                  <polygon points="228.5,146 173,178 173,242 228.5,210" fill="#F5EFDB"/>
+                  <!-- window crossbars -->
+                  <line x1="200.75" y1="162" x2="200.75" y2="226"/>
+                  <line x1="228.5" y1="178" x2="173" y2="210"/>
+                  <!-- sill -->
+                  <line x1="173" y1="242" x2="228.5" y2="210" stroke-width="1.3"/>
+                </g>
+
+                <!-- Poster / chart on right wall (x=8..8 plane, y=2..4, h=3..5)
+                     But wall is y=0..8 plane at... wait right wall is y=0 plane (bookshelf side).
+                     Let me redefine: left wall = x=0 plane; right wall = y=0 plane.
+                     Right wall: goes from back (270,250) to right corner (492, 378). A point (x, 0, h):
+                       iso = (270 + x*27.7, 250 + x*16 - h*32)
+                     Poster at x=2..5, h=3..5: corners
+                       (2,0,5)=(325.4, 122) → (325, 122)
+                       (5,0,5)=(408.5, 170) → (408, 170)
+                       (5,0,3)=(408, 234)
+                       (2,0,3)=(325, 186)
+                -->
+                <g fill="none" stroke="#1B3FE5" stroke-width="1" stroke-linejoin="round" stroke-linecap="round">
+                  <polygon points="325,122 408,170 408,234 325,186" fill="#D3DEF9" opacity="0.7"/>
+                  <!-- poster content -->
+                  <text x="340" y="150" font-family="ui-monospace, monospace" font-size="9" font-weight="700" fill="#1B3FE5" transform="skewY(30) translate(0 -182)" letter-spacing="0.5">数据流</text>
+                  <path d="M 340 198 L 355 198 M 340 210 L 362 210 M 340 222 L 350 222" stroke-width="0.7" transform="skewY(30) translate(0 -190)" opacity="0.65"/>
+                  <circle cx="385" cy="160" r="6" fill="none" stroke-width="0.8" transform="skewY(30) translate(0 -194)" opacity="0.6"/>
+                </g>
+
+                <!-- Clock on back ridge wall (hanging) -->
+                <g transform="translate(270 110)" fill="none" stroke="#1B3FE5" stroke-width="1">
+                  <circle cx="0" cy="0" r="12" fill="#F5EFDB"/>
+                  <circle cx="0" cy="0" r="1.4" fill="#1B3FE5"/>
+                  <line x1="0" y1="0" x2="0" y2="-7" stroke-width="1.3"/>
+                  <line x1="0" y1="0" x2="6" y2="2" stroke-width="1.3"/>
+                  <circle cx="0" cy="-9" r="0.8" fill="#1B3FE5"/>
+                  <circle cx="0" cy="9" r="0.8" fill="#1B3FE5"/>
+                  <circle cx="-9" cy="0" r="0.8" fill="#1B3FE5"/>
+                  <circle cx="9" cy="0" r="0.8" fill="#1B3FE5"/>
+                </g>
+
+                <!-- ============ FURNITURE ============ -->
+                <g fill="none" stroke="#1B3FE5" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+
+                  <!-- Bookshelf against LEFT WALL, plan x=0.3, y=1.5..4, height 4.5u
+                       Back edge sits on left wall plane. Top face project:
+                       iso(0.3,1.5)=(270-33.24, 270+24)=(236.76, 274)  round (237,274)
+                       iso(0.3,4.0)=(270-102.49, 270+64)... wait cy=250, so:
+                       iso(0.3,1.5) = (270+(0.3-1.5)*27.7, 250+(0.3+1.5)*16) = (270-33.24, 250+28.8) = (236.76, 278.8) → (237,279)
+                       iso(0.3,4.0) = (270-102.49, 250+68.8) = (167.51, 318.8) → (168,319)
+                       lift 4.5u = 144: top corners
+                         back-top = (237, 279-144) = (237,135)
+                         front-top = (168, 319-144) = (168,175)
+                  -->
+                  <!-- front face (parallelogram along x=0.3 plane) -->
+                  <path d="M 237 279 L 168 319 L 168 175 L 237 135 Z" fill="#FBF6E7"/>
+                  <!-- shelves -->
+                  <path d="M 237 243 L 168 283 M 237 207 L 168 247 M 237 171 L 168 211" stroke-width="0.7" opacity="0.55"/>
+                  <!-- books on top shelf -->
+                  <g stroke-width="0.8">
+                    <path d="M 215 241 L 215 213 L 208 217 L 208 245 Z" fill="#D3DEF9"/>
+                    <path d="M 205 246 L 205 218 L 200 221 L 200 249 Z" fill="#FAD98A"/>
+                    <path d="M 197 250 L 197 222 L 190 226 L 190 254 Z" fill="#F5EFDB"/>
+                  </g>
+                  <!-- books middle shelf -->
+                  <g stroke-width="0.8">
+                    <path d="M 220 275 L 220 249 L 212 253 L 212 279 Z" fill="#F5EFDB"/>
+                    <path d="M 209 281 L 209 255 L 200 259 L 200 285 Z" fill="#D3DEF9"/>
+                    <path d="M 197 287 L 197 261 L 188 265 L 188 291 Z" fill="#FAD98A"/>
+                  </g>
+                  <!-- cabinet right edge line -->
+                  <line x1="237" y1="135" x2="237" y2="279"/>
+                  <line x1="168" y1="175" x2="168" y2="319"/>
+
+                  <!-- Round RUG under table, plan center (4,4), radius 2.2u -->
+                  <ellipse cx="270" cy="378" rx="78" ry="35" fill="#FAD98A" opacity="0.45" stroke-width="0.9"/>
+                  <ellipse cx="270" cy="378" rx="68" ry="30" fill="none" stroke-width="0.7" opacity="0.55"/>
+                  <ellipse cx="270" cy="378" rx="58" ry="25" fill="none" stroke-width="0.7" opacity="0.4"/>
+
+                  <!-- Round central table, plan center (4,4), radius 1.6u → rx=57, ry=26
+                       top surface height = 0.9u = 28px above floor -->
+                  <ellipse cx="270" cy="354" rx="63" ry="28" fill="#FBF6E7"/>
+                  <!-- table pedestal -->
+                  <path d="M 270 354 L 270 400" stroke-width="1.1"/>
+                  <path d="M 258 400 L 282 400" stroke-width="1.2"/>
+                  <path d="M 253 402 L 287 402" stroke-width="0.9" opacity="0.7"/>
+
+                  <!-- on-table items: doc, coffee mug, small stack -->
+                  <!-- doc -->
+                  <g stroke-width="1" fill="#F5EFDB">
+                    <path d="M 270 344 L 300 352 L 300 364 L 270 356 Z"/>
+                    <path d="M 275 353 L 295 358 M 275 357 L 292 362 M 275 361 L 288 365" stroke-width="0.6" opacity="0.7"/>
+                  </g>
+                  <!-- coffee mug -->
+                  <g stroke-width="1" fill="#FBF6E7">
+                    <ellipse cx="245" cy="346" rx="7" ry="3"/>
+                    <path d="M 238 346 L 238 352 Q 245 356 252 352 L 252 346"/>
+                    <path d="M 252 347 Q 257 347 257 350 Q 257 353 252 353"/>
+                  </g>
+                  <!-- small books stack -->
+                  <g stroke-width="0.9" fill="#D3DEF9">
+                    <rect x="282" y="336" width="16" height="4"/>
+                  </g>
+                  <g stroke-width="0.9" fill="#FAD98A">
+                    <rect x="284" y="332" width="13" height="4"/>
+                  </g>
+
+                  <!-- Right DESK, plan (5,3)→(7.5,4), height 1u=32
+                       iso(5,3)=(270+55.4, 250+128)=(325,378)  oh but that's on floor y=378 line. Let me use (5,2)..(7.5,3):
+                       iso(5,2)=(270+83.1, 250+112)=(353,362)
+                       iso(7.5,2)=(270+152.35, 250+152)=(422,402)
+                       iso(7.5,3)=(270+124.65, 250+168)=(395,418)
+                       iso(5,3)=(270+55.4, 250+128)=(325,378)
+                       top face height 0.95u = 30. Top corners subtract 30 y:
+                       (353,332) (422,372) (395,388) (325,348)
+                  -->
+                  <!-- desk top face -->
+                  <path d="M 353 332 L 422 372 L 395 388 L 325 348 Z" fill="#FBF6E7"/>
+                  <!-- front side -->
+                  <path d="M 325 348 L 395 388 L 395 404 L 325 364 Z" fill="#EEE5C6" stroke-width="1"/>
+                  <!-- right side -->
+                  <path d="M 395 388 L 422 372 L 422 388 L 395 404 Z" fill="#E3D8B0" stroke-width="1"/>
+
+                  <!-- Monitor on desk: base around (6.3, 2.4) on top surface
+                       iso(6.3,2.4)=(270+108.03, 250+139.2)=(378,389) -30 for top=(378,359) -->
+                  <!-- monitor stand -->
+                  <path d="M 378 346 L 378 359" stroke-width="1.3"/>
+                  <path d="M 372 346 L 384 346" stroke-width="1.3"/>
+                  <!-- monitor screen box (front of desk, facing agent C who is to the left-front) -->
+                  <!-- screen face in y=0 plane (facing -y direction basically): we'll just draw a skewed rectangle -->
+                  <path d="M 362 310 L 394 328 L 394 348 L 362 330 Z" fill="#D3DEF9" stroke-width="1.1"/>
+                  <!-- screen content lines -->
+                  <path d="M 368 320 L 386 331 M 368 326 L 382 334 M 368 332 L 388 343" stroke="#1B3FE5" stroke-width="0.7" opacity="0.7"/>
+
+                  <!-- Keyboard on desk -->
+                  <path d="M 340 352 L 370 369 L 362 374 L 332 357 Z" fill="#F5EFDB" stroke-width="0.9"/>
+                  <path d="M 342 357 L 366 371 M 342 361 L 366 375" stroke-width="0.5" opacity="0.5"/>
+
+                  <!-- Floor lamp near bookshelf, plan (1.5, 1.2) -->
+                  <!-- iso(1.5,1.2)=(270+8.31, 250+43.2)=(278, 293) base -->
+                  <ellipse cx="285" cy="295" rx="8" ry="3" fill="#FBF6E7"/>
+                  <path d="M 285 295 L 283 248" stroke-width="1"/>
+                  <path d="M 275 248 L 292 248 L 289 225 L 278 225 Z" fill="#FAD98A" stroke-width="1.1"/>
+
+                  <!-- Plant pot front-right, plan (5.5, 6.2)
+                       iso(5.5,6.2)=(270-19.39, 250+187.2)=(251, 437) -->
+                  <rect x="254" y="455" width="22" height="18" fill="#FBF6E7"/>
+                  <path d="M 258 455 L 262 428 M 265 458 L 265 422 M 272 455 L 268 428 M 278 452 L 274 430" stroke-width="1"/>
+
+                  <!-- Scattered papers on floor near table -->
+                  <g stroke-width="0.8" fill="#F5EFDB">
+                    <path d="M 338 400 L 358 408 L 352 420 L 332 412 Z"/>
+                    <path d="M 200 430 L 218 438 L 214 448 L 196 440 Z"/>
+                  </g>
+
+                  <!-- Pendant lamp from ridge to above table -->
+                  <line x1="270" y1="58" x2="270" y2="290"/>
+                  <path d="M 254 290 L 286 290 L 278 316 L 262 316 Z" fill="#FAD98A" stroke-width="1.1"/>
+                  <!-- light glow under lamp -->
+                  <ellipse cx="270" cy="340" rx="36" ry="14" fill="#FAD98A" opacity="0.18" stroke="none"/>
+                </g>
+
+                <!-- ============ AGENTS ============ -->
+
+                <!-- Agent A (CKC_ANALYST) at bookshelf — plan (1.4, 3.2) -->
+                <!-- iso(1.4,3.2)=(270-49.86, 250+73.6)=(220,324) -->
+                <g class="viz-agent" transform="translate(220 310)">
+                  <!-- pixel monster (reading a book) -->
+                  <g fill="#1B3FE5" transform="scale(2.6)">
+                    <rect x="2" y="0" width="6" height="1"/>
+                    <rect x="1" y="1" width="8" height="3"/>
+                    <rect x="2" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="7" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="1" y="4" width="8" height="2"/>
+                    <rect x="0" y="6" width="3" height="1"/>
+                    <rect x="7" y="6" width="3" height="1"/>
+                    <rect x="0" y="7" width="2" height="1"/>
+                    <rect x="8" y="7" width="2" height="1"/>
+                  </g>
+                  <!-- book in hands -->
+                  <g stroke="#1B3FE5" stroke-width="0.9" fill="#F5EFDB">
+                    <rect x="26" y="18" width="16" height="11"/>
+                    <line x1="34" y1="18" x2="34" y2="29"/>
+                  </g>
+                </g>
+
+                <!-- Agent B (TRIAL_ANALYSIS) at center table -->
+                <g class="viz-agent" transform="translate(246 360)">
+                  <g fill="#1B3FE5" transform="scale(2.4)">
+                    <rect x="4" y="-3" width="1" height="2"/>
+                    <rect x="3" y="-4" width="3" height="1"/>
+                    <rect x="1" y="0" width="7" height="1"/>
+                    <rect x="0" y="1" width="9" height="3"/>
+                    <rect x="2" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="6" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="0" y="4" width="9" height="2"/>
+                    <rect x="1" y="6" width="2" height="1"/>
+                    <rect x="6" y="6" width="2" height="1"/>
+                  </g>
+                </g>
+
+                <!-- Agent C (DATA_WATCHER) at right desk -->
+                <g class="viz-agent" transform="translate(334 370)">
+                  <g fill="#1B3FE5" transform="scale(2.4)">
+                    <rect x="1" y="0" width="6" height="1"/>
+                    <rect x="0" y="1" width="8" height="3"/>
+                    <rect x="1" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="6" y="2" width="1" height="1" fill="#F5EFDB"/>
+                    <rect x="0" y="4" width="8" height="2"/>
+                    <rect x="1" y="6" width="2" height="2"/>
+                    <rect x="5" y="6" width="2" height="2"/>
+                  </g>
+                </g>
+
+                <!-- ============ CALLOUT LABELS (right column, leader lines) ============ -->
+                <g class="viz-callouts">
+                  <!-- Agent A leader: head at ~(238, 308), goes right to label at (540, 140) -->
+                  <g stroke="#1B3FE5" stroke-width="0.9" fill="none" opacity="0.85">
+                    <path d="M 238 308 L 430 308 L 530 200"/>
+                    <circle cx="238" cy="308" r="2.2" fill="#1B3FE5"/>
+                  </g>
+                  <rect x="530" y="170" width="130" height="44" fill="rgba(245,239,219,0.78)" stroke="#1B3FE5" stroke-width="0.9"/>
+                  <text x="540" y="188" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#1B3FE5" letter-spacing="0.4">CKC_ANALYST</text>
+                  <text x="540" y="204" font-family="ui-monospace, monospace" font-size="9" fill="#0b1220" opacity="0.85">reading · shelf 3</text>
+
+                  <!-- Agent B leader: head at ~(260, 358), leader goes right -->
+                  <g stroke="#1B3FE5" stroke-width="0.9" fill="none" opacity="0.85">
+                    <path d="M 260 358 L 460 358 L 530 310"/>
+                    <circle cx="260" cy="358" r="2.2" fill="#1B3FE5"/>
+                  </g>
+                  <rect x="530" y="286" width="142" height="44" fill="rgba(245,239,219,0.78)" stroke="#1B3FE5" stroke-width="0.9"/>
+                  <text x="540" y="304" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#1B3FE5" letter-spacing="0.4">TRIAL_ANALYSIS</text>
+                  <text x="540" y="320" font-family="ui-monospace, monospace" font-size="9" fill="#0b1220" opacity="0.85">drafting · section 2/4</text>
+
+                  <!-- Agent C leader: head at ~(348, 368) -->
+                  <g stroke="#1B3FE5" stroke-width="0.9" fill="none" opacity="0.85">
+                    <path d="M 348 368 L 490 420 L 530 420"/>
+                    <circle cx="348" cy="368" r="2.2" fill="#1B3FE5"/>
+                  </g>
+                  <rect x="530" y="402" width="132" height="44" fill="rgba(245,239,219,0.78)" stroke="#1B3FE5" stroke-width="0.9"/>
+                  <text x="540" y="420" font-family="ui-monospace, monospace" font-size="10.5" font-weight="700" fill="#1B3FE5" letter-spacing="0.4">DATA_WATCHER</text>
+                  <text x="540" y="436" font-family="ui-monospace, monospace" font-size="9" fill="#0b1220" opacity="0.85">monitoring · 3 streams</text>
+                </g>
+
+                
+
+                <!-- data packets animated between agents -->
+                <rect class="viz-packet p1" width="6" height="3.5" fill="#1B3FE5" opacity="0.78"/>
+                <rect class="viz-packet p2" width="5" height="3.5" fill="#1B3FE5" opacity="0.62"/>
+                <rect class="viz-packet p3" width="6" height="3.5" fill="#1B3FE5" opacity="0.85"/>
+              </svg>
+              <div class="run-viz-foot">
+                <span class="run-viz-tag"><span class="tag-dot"></span>ckc_analyst <em>— reading records</em></span>
+                <span class="run-viz-tag"><span class="tag-dot"></span>trial_analysis <em>— drafting report</em></span>
+                <span class="run-viz-tag"><span class="tag-dot"></span>data_watcher <em>— monitoring streams</em></span>
+              </div>
+            </div>
+
+<pre>summary ──────────────────
+• 50 records parsed, 49 reconciled, 1 flagged for human review
+• Top category: Cloud infra (37%), SaaS (21%), Travel (14%)
+• Anomaly: 2.4× month-over-month increase in "Ads / Other"
+• Suggested action: consolidate duplicate SaaS seats</pre>
+            <div class="flex gap-8 mt-12">
+              <button class="btn btn-sm btn-primary">打开报告 ↗</button>
+              <button class="btn btn-sm">下载 CSV</button>
+              <button class="btn btn-sm btn-ghost">查看回执</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="prompt-box">
+          <div class="lbl">Prompt 输入框 · 随时向 agent 追加上下文或修订请求</div>
+          <textarea placeholder="在此输入：补充上下文，或让 agent 重做某一步…"></textarea>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= TASK DETAIL — HITL (agents pending) ========================= -->
+<section class="page" data-page="task-hitl"
+  data-title="任务详情" data-sub="本任务的时间线、agent 与回执。">
+  <div class="container">
+    <div class="detail-grid">
+      <aside class="detail-side">
+        <div class="side-block">
+          <h4>已花费</h4>
+          <div class="cost-head">
+            <span class="cost-spent">¥1.30</span>
+            <span class="cost-sep">/</span>
+            <span class="cost-budget">¥36.00</span>
+          </div>
+          <div class="cost-bar" title="已使用预算的 4%"><div class="cost-bar-fill" style="width:4%;"></div></div>
+          <div class="cost-pct">已用 4% · 剩余 ¥34.70</div>
+          <div class="kv-grid">
+            <div class="kv-cell"><span class="kv-label">耗时</span><span class="kv-value">02:00:00</span></div>
+            <div class="kv-cell"><span class="kv-label">调用次数</span><span class="kv-value">12</span></div>
+            <div class="kv-cell"><span class="kv-label">下一步预估</span><span class="kv-value">¥0.65</span></div>
+            <div class="kv-cell"><span class="kv-label">优惠后</span><span class="kv-value">¥0.58</span></div>
+          </div>
+        </div>
+        <div class="side-block">
+          <h4>已雇佣的 agent</h4>
+          <div class="kv"><b>+ Agent</b><span class="muted">添加更多</span></div>
+          <div class="muted" style="font-size:11px;">暂无 — 等待你的接受。</div>
+        </div>
+        <div class="side-block">
+          <h4>选择的模型</h4>
+          <div class="field" style="margin-bottom:8px;">
+            <select class="store-select" style="width:100%;">
+              <option>Sonnet — Haiku 4.5</option>
+            </select>
+          </div>
+          <div class="kv"><b>API Key</b><span class="muted">•••••••• 显示</span></div>
+          <div class="mt-12" style="display:flex; gap:6px;">
+            <button class="btn btn-sm btn-primary">保存并使用</button>
+            <button class="btn btn-sm">测试 Key</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="detail-main">
+        <div class="tq-card">
+          <div class="tq-eyebrow">§ 任务 · #T-0251</div>
+          <h1 class="tq-title">分析 50 份财务记录的支出模式，并生成详细报告。</h1>
+          <div class="tq-sub">等你决策 · 第 3 / 4 步</div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num done">1</span> 理解你的需求</div>
+            <span class="step-pill done">摘要就绪</span>
+          </div>
+          <div class="step-body">
+            任务消息：2 · 任务进展：正在寻找协作者，等待你的决策。
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num done">2</span> 拆解为子任务</div>
+            <span class="step-pill count">3 个子任务</span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head">
+            <div class="step-title"><span class="step-num active">3</span> 推荐 agents</div>
+            <span class="step-pill wait">等你选择</span>
+          </div>
+          <div class="step-body">
+            <div class="rec-grid">
+              <div class="rec-card">
+                <div class="agent-avatar" aria-hidden="true">
+                  <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+                    <rect x="2" y="1" width="6" height="1"/>
+                    <rect x="1" y="2" width="8" height="1"/>
+                    <rect x="1" y="3" width="2" height="2"/>
+                    <rect x="7" y="3" width="2" height="2"/>
+                    <rect x="3" y="4" width="1" height="1"/>
+                    <rect x="6" y="4" width="1" height="1"/>
+                    <rect x="1" y="5" width="8" height="1"/>
+                    <rect x="1" y="6" width="8" height="1"/>
+                    <rect x="3" y="6" width="4" height="1" fill="var(--paper)"/>
+                    <rect x="2" y="7" width="6" height="1"/>
+                    <rect x="3" y="8" width="4" height="1"/>
+                  </svg>
+                </div>
+                <div class="name">ckc_analyst_worker</div>
+                <div class="cat">能力匹配</div>
+                <div class="score">分数 0.92</div>
+                <dl>
+                  <dt>职能描述</dt>
+                  <dd>数据分析</dd>
+                  <dt>技能</dt>
+                  <dd>数据分析</dd>
+                  <dt>画像</dt>
+                  <dd>中等风险 · 就绪</dd>
+                </dl>
+                <div class="cost">单次调用：¥1.80</div>
+              </div>
+              <div class="rec-card">
+                <div class="agent-avatar" aria-hidden="true">
+                  <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+                    <rect x="3" y="0" width="4" height="1"/>
+                    <rect x="2" y="1" width="6" height="1"/>
+                    <rect x="1" y="2" width="8" height="2"/>
+                    <rect x="2" y="3" width="2" height="1" fill="var(--paper)"/>
+                    <rect x="6" y="3" width="2" height="1" fill="var(--paper)"/>
+                    <rect x="1" y="4" width="8" height="1"/>
+                    <rect x="2" y="5" width="6" height="1"/>
+                    <rect x="4" y="6" width="2" height="2"/>
+                    <rect x="3" y="8" width="4" height="1"/>
+                  </svg>
+                </div>
+                <div class="name">trial_analysis_user_9758f932</div>
+                <div class="cat">能力匹配</div>
+                <div class="score">分数 0.550</div>
+                <dl>
+                  <dt>职能描述</dt>
+                  <dd>数据分析</dd>
+                  <dt>技能</dt>
+                  <dd>分析</dd>
+                  <dt>画像</dt>
+                  <dd>中等风险 · 就绪</dd>
+                </dl>
+                <div class="cost">单次调用：¥1.80</div>
+              </div>
+            </div>
+            <div class="s-label mt-12" style="margin-bottom:8px;">决策</div>
+            <div class="rec-actions">
+              <button class="btn btn-ok" onclick="nav('task')">接受</button>
+              <button class="btn">拒绝</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-head no-body">
+            <div class="step-title"><span class="step-num wait">4</span> 运行 & 校验</div>
+            <span class="step-pill wait">待接受</span>
+          </div>
+        </div>
+
+        <div class="prompt-box">
+          <div class="lbl">Prompt 输入框 · 你可以随时为本任务追加澄清</div>
+          <textarea placeholder="在此输入：补充上下文，或让 agent 重做某一步…"></textarea>
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= ACCOUNT (clicked from OCTO bottom avatar) ========================= -->
+<section class="page" data-page="account"
+  data-title="账户管理" data-sub="头像、资料、密码与登录设备。">
+  <div class="container">
+    <div class="account-wrap">
+      <div class="pane">
+        <h3>你的账户</h3>
+        <div class="profile-head">
+          <div class="who">
+            <div class="avatar"><svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+<rect x="2" y="1" width="6" height="1" fill="#FBF8EF"/>
+<rect x="1" y="2" width="8" height="6" fill="#FBF8EF"/>
+<rect x="2" y="8" width="6" height="1" fill="#FBF8EF"/>
+<rect x="2" y="0" width="6" height="1" fill="#0B1220"/>
+<rect x="1" y="1" width="1" height="1" fill="#0B1220"/>
+<rect x="8" y="1" width="1" height="1" fill="#0B1220"/>
+<rect x="0" y="2" width="1" height="6" fill="#0B1220"/>
+<rect x="9" y="2" width="1" height="6" fill="#0B1220"/>
+<rect x="1" y="8" width="1" height="1" fill="#0B1220"/>
+<rect x="8" y="8" width="1" height="1" fill="#0B1220"/>
+<rect x="2" y="9" width="2" height="1" fill="#0B1220"/>
+<rect x="6" y="9" width="2" height="1" fill="#0B1220"/>
+<rect x="2" y="0" width="1" height="1" fill="#0B1220"/>
+<rect x="7" y="0" width="1" height="1" fill="#0B1220"/>
+<rect x="3" y="3" width="1" height="2" fill="#1B3FE5"/>
+<rect x="6" y="3" width="1" height="2" fill="#1B3FE5"/>
+<rect x="3" y="6" width="4" height="1" fill="#0B1220"/>
+<rect x="4" y="7" width="1" height="1" fill="#FBF8EF"/>
+<rect x="5" y="7" width="1" height="1" fill="#FBF8EF"/>
+<rect x="3" y="7" width="1" height="1" fill="#0B1220"/>
+<rect x="6" y="7" width="1" height="1" fill="#0B1220"/>
+</svg></div>
+            <div>
+              <b>rlx417</b><br/>
+              <span>用户档案 · Max 计划</span>
+            </div>
+          </div>
+          <button class="btn btn-sm">上传头像</button>
+        </div>
+
+        <div class="alert">请完善个人档案：缺少 姓 / 名。</div>
+
+        <div class="sub-head">基本信息</div>
+        <div class="hint">更新你的个人资料。</div>
+        <div class="row-2">
+          <div class="field">
+            <label>名</label>
+            <input type="text" value="rlx417" />
+          </div>
+          <div class="field">
+            <label>姓</label>
+            <input type="text" placeholder="姓" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>邮箱地址</label>
+            <input type="email" value="chunyu_sh@gsd.harvard.edu" />
+          </div>
+          <div class="field">
+            <label>电话（选填）</label>
+            <input type="tel" placeholder="选填" />
+          </div>
+        </div>
+        <div class="mt-12">
+          <button class="btn btn-primary btn-sm">保存资料</button>
+        </div>
+
+        <div class="sub-head" style="margin-top:28px;">修改密码</div>
+        <div class="hint">新密码不能与历史使用过的密码相同。</div>
+        <div class="field">
+          <label>当前密码</label>
+          <input type="password" placeholder="输入当前密码" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>新密码</label>
+            <input type="password" placeholder="••••••••" />
+          </div>
+          <div class="field">
+            <label>确认新密码</label>
+            <input type="password" placeholder="••••••••" />
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm mt-12">修改密码</button>
+
+        <div class="sub-head" style="margin-top:28px;">活跃会话</div>
+        <div class="hint">管理已登录的设备。</div>
+        <div class="flex gap-8" style="margin-top:8px;">
+          <button class="btn btn-sm">撤销其他会话</button>
+          <button class="btn btn-sm btn-ghost" style="color:var(--red); border-color:var(--red-soft);">登出所有设备</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-foot">
+      <span class="muted">已登录： <b>rlx417</b> · chunyu_sh@gsd.harvard.edu</span>
+      <button class="btn btn-sm btn-logout" onclick="nav('login')">登出</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= SETTINGS · 个人档案 (workspace) ========================= -->
+<section class="page" data-page="settings"
+  data-title="个人档案" data-sub="API Key、用量追踪、我的 agent。">
+  <div class="container">
+    <!-- Identity strip -->
+    <div class="me-strip">
+      <div class="me-strip-left">
+        <div class="me-avatar">R</div>
+        <div>
+          <div class="me-name">Raine <span class="me-handle">· rlx417</span></div>
+          <div class="me-plan">Max 计划 · 已激活 · 自 2025-09 起</div>
+        </div>
+      </div>
+      <div class="me-strip-actions">
+        <button class="btn btn-sm" onclick="nav('account')">账户管理</button>
+        <button class="btn btn-sm btn-ghost" style="color:var(--red); border-color:var(--red-soft);" onclick="nav('login')">登出</button>
+      </div>
+    </div>
+
+    <div class="me-grid">
+      <!-- LEFT column: API + Usage -->
+      <div class="me-col">
+        <div class="pane">
+          <h3>API Key</h3>
+          <div class="hint">仅存于本地浏览器 — 不会上传至 OCTO 服务器。</div>
+          <div class="field" style="margin-top:10px;">
+            <label>主供应商 Key（默认 · 腾讯云 TokenHub）</label>
+            <div class="apikey-row">
+              <input class="apikey-input" type="password" value="th-live-••••••••••••••••••••••••" />
+              <button class="btn btn-sm">显示</button>
+            </div>
+          </div>
+          <div class="row-2" style="margin-top:6px;">
+            <div class="kv-card">
+              <span class="kv-card-l">状态</span>
+              <span class="kv-card-v"><span class="dot-ok"></span> 已校验</span>
+            </div>
+            <div class="kv-card">
+              <span class="kv-card-l">最近使用</span>
+              <span class="kv-card-v">2 分钟前</span>
+            </div>
+          </div>
+
+          <details class="me-foldable">
+            <summary>+ 添加备用供应商 Key（Anthropic / OpenAI / DeepSeek …）</summary>
+            <div class="field" style="margin-top:10px;">
+              <label>Anthropic</label>
+              <div class="apikey-row">
+                <input class="apikey-input" type="password" placeholder="sk-ant-…" />
+                <button class="btn btn-sm">保存</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>OpenAI</label>
+              <div class="apikey-row">
+                <input class="apikey-input" type="password" placeholder="sk-…" />
+                <button class="btn btn-sm">保存</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="pane">
+          <h3>用量追踪</h3>
+          <div class="hint">本月（2026-04）数据 · 每日 0 点更新。</div>
+          <div class="usage-cards">
+            <div class="usage-card">
+              <div class="uc-label">本月费用</div>
+              <div class="uc-value">¥2.86</div>
+              <div class="uc-meta"><span class="uc-trend up">↑ 12%</span> 对比 3 月</div>
+            </div>
+            <div class="usage-card">
+              <div class="uc-label">调用次数</div>
+              <div class="uc-value">312</div>
+              <div class="uc-meta">累计 1,847 次</div>
+            </div>
+            <div class="usage-card">
+              <div class="uc-label">活跃 agent</div>
+              <div class="uc-value">7</div>
+              <div class="uc-meta">3 个本周新增</div>
+            </div>
+            <div class="usage-card">
+              <div class="uc-label">运行时长</div>
+              <div class="uc-value">14h</div>
+              <div class="uc-meta">平均每天 28 分钟</div>
+            </div>
+          </div>
+          <div class="usage-progress">
+            <div class="up-head">
+              <span>预算 ¥36 / 月</span>
+              <span class="muted tabular">已用 ¥2.86 · 剩余 ¥33.14</span>
+            </div>
+            <div class="up-bar"><div class="up-fill" style="width:8%"></div></div>
+            <div class="up-foot">
+              <button class="btn btn-sm">设置限额</button>
+              <button class="btn btn-sm btn-ghost">导出账单</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT column: My agents -->
+      <div class="me-col">
+        <div class="pane">
+          <h3>我的 agent</h3>
+          <div class="agents-list-row">
+            <div>
+              <div class="k">我创建的</div>
+              <div class="muted">还没有创建任何 agent。</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="nav('builder')">+ 创建 agent</button>
+          </div>
+          <div class="agents-list-row">
+            <div style="flex:1; min-width:0;">
+              <div class="k">我雇佣的</div>
+              <ul class="mini-list">
+                <li><span class="ml-dot"></span><span class="ml-name">深度研究分析师</span><span class="ml-meta">cxc · ★★★★★ · ¥3.02 / 次</span></li>
+                <li><span class="ml-dot"></span><span class="ml-name">艺术设计师</span><span class="ml-meta">cxc · ★★★★☆ · ¥1.30 / 次</span></li>
+                <li><span class="ml-dot"></span><span class="ml-name">公共研究员</span><span class="ml-meta">storexxt · ★★★★☆ · 免费</span></li>
+              </ul>
+            </div>
+            <button class="btn btn-sm" onclick="nav('store')">浏览商城</button>
+          </div>
+          <div class="agents-list-row">
+            <div style="flex:1; min-width:0;">
+              <div class="k">共享团队</div>
+              <ul class="mini-list">
+                <li><span class="ml-dot"></span><span class="ml-name">市场情报小组</span><span class="ml-meta">3 个 agent · 研究员 + 分析师 + 写手 · 使用 12 次</span></li>
+                <li><span class="ml-dot"></span><span class="ml-name">设计评审环</span><span class="ml-meta">2 个 agent · 设计师 + 评审 · 使用 7 次</span></li>
+                <li><span class="ml-dot"></span><span class="ml-name">文案冲刺组</span><span class="ml-meta">2 个 agent · 写手 + 编辑 · 使用 4 次</span></li>
+              </ul>
+            </div>
+            <button class="btn btn-sm">+ 新建团队</button>
+          </div>
+        </div>
+
+        <div class="pane">
+          <h3>最近使用</h3>
+          <div class="hint">最近 7 天调用过的 agent 与任务。</div>
+          <ul class="recent-list">
+            <li>
+              <span class="rl-time">2 小时前</span>
+              <span class="rl-name">深度研究分析师</span>
+              <span class="rl-task">#T-0248 · 财务记录支出分析</span>
+            </li>
+            <li>
+              <span class="rl-time">昨天</span>
+              <span class="rl-name">艺术设计师</span>
+              <span class="rl-task">#T-0247 · Q2 路线图备忘录</span>
+            </li>
+            <li>
+              <span class="rl-time">3 天前</span>
+              <span class="rl-name">公共研究员</span>
+              <span class="rl-task">#T-0244 · SaaS 竞品价格调研</span>
+            </li>
+            <li>
+              <span class="rl-time">4 天前</span>
+              <span class="rl-name">市场情报小组</span>
+              <span class="rl-task">#T-0241 · 周度市场动态摘要</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-foot">
+      <span class="muted">已登录： <b>rlx417</b> · chunyu_sh@gsd.harvard.edu</span>
+      <button class="btn btn-sm" onclick="nav('account')">账户管理</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= AGENT STORE ========================= -->
+<section class="page" data-page="store"
+  data-title="Agent 商城" data-sub="发现并雇佣社区构建的 agent。">
+  <div class="container">
+    <div class="store-head">
+      <input class="store-search" placeholder="搜索 agent 或技能…" />
+      <select class="store-select">
+        <option>公开</option>
+        <option>私有</option>
+        <option>我的团队</option>
+      </select>
+      <select class="store-select">
+        <option>排序：最新</option>
+        <option>排序：最多雇佣</option>
+        <option>排序：最高评分</option>
+      </select>
+      <div class="store-status">商城在线</div>
+    </div>
+
+    <div class="store-grid">
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 12 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="4" y="0" width="4" height="1"/><rect x="2" y="1" width="8" height="1"/><rect x="1" y="2" width="10" height="1"/><rect x="0" y="3" width="10" height="1"/><rect x="0" y="4" width="10" height="1"/><rect x="1" y="5" width="9" height="1"/><rect x="1" y="6" width="2" height="1"/><rect x="4" y="6" width="3" height="1"/><rect x="8" y="6" width="2" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/></svg>
+          <div class="sc-name">公共研究员</div>
+          <div class="sc-owner">storexxt</div>
+          <div class="sc-rating">★★★★☆</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt><dd>研究市场信号并总结要点。</dd>
+          <dt>技能</dt><dd>研究、摘要</dd>
+          <dt>画像</dt><dd>中等风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.07</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="3" y="0" width="4" height="1"/><rect x="2" y="1" width="6" height="1"/><rect x="1" y="2" width="8" height="1"/><rect x="0" y="3" width="10" height="1"/><rect x="1" y="4" width="2" height="1"/><rect x="4" y="4" width="2" height="1"/><rect x="7" y="4" width="2" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="9" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="8" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/></svg>
+          <div class="sc-name">公共研究员</div>
+          <div class="sc-owner">storexxt</div>
+          <div class="sc-rating">★★★★☆</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt><dd>研究市场信号并总结要点。</dd>
+          <dt>技能</dt><dd>研究、摘要</dd>
+          <dt>画像</dt><dd>中等风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.07</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="2" y="0" width="6" height="1"/><rect x="1" y="1" width="8" height="1"/><rect x="0" y="2" width="10" height="1"/><rect x="0" y="3" width="9" height="1"/><rect x="1" y="4" width="8" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="4" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="4" y="6" width="2" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="1" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="6" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/></svg>
+          <div class="sc-name">公共研究员</div>
+          <div class="sc-owner">storexxt</div>
+          <div class="sc-rating">★★★★☆</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt><dd>研究市场信号并总结要点。</dd>
+          <dt>技能</dt><dd>研究、摘要</dd>
+          <dt>画像</dt><dd>中等风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.07</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 8 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="3" y="0" width="2" height="1"/><rect x="2" y="1" width="4" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="1" y="3" width="6" height="1"/><rect x="0" y="4" width="8" height="1"/><rect x="1" y="5" width="6" height="1"/><rect x="2" y="6" width="4" height="1"/><rect x="1" y="7" width="2" height="1"/><rect x="5" y="7" width="2" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="0" y="9" width="2" height="1"/><rect x="6" y="9" width="2" height="1"/></svg>
+          <div class="sc-name">商城测试 Agent</div>
+          <div class="sc-owner">storetest</div>
+          <div class="sc-rating">★★★★★</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt>
+          <dd>测试 agent 商城展示可见性。</dd>
+          <dt>技能</dt><dd>测试</dd>
+          <dt>画像</dt><dd>低风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.07</span>
+          <span class="sc-vis">免费 · 前 500 次调用</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="7" y="0" width="1" height="1"/><rect x="6" y="1" width="3" height="1"/><rect x="5" y="2" width="5" height="1"/><rect x="0" y="3" width="3" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="0" y="4" width="8" height="1"/><rect x="1" y="5" width="7" height="1"/><rect x="2" y="6" width="2" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="2" y="7" width="2" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="1" y="9" width="2" height="1"/><rect x="6" y="9" width="2" height="1"/></svg>
+          <div class="sc-name">艺术设计师</div>
+          <div class="sc-owner">cxc</div>
+          <div class="sc-rating">★★★★★</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt>
+          <dd>把简报转化为统一的视觉方向：情绪板、规划，并产出与品牌 / 世界观 / 营销意图保持一致的创意素材。</dd>
+          <dt>技能</dt>
+          <dd>艺术设计、概念发展、创意 + 社交方向</dd>
+          <dt>画像</dt>
+          <dd>中等风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.21</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="3" y="0" width="4" height="1"/><rect x="2" y="1" width="6" height="1"/><rect x="1" y="2" width="8" height="1"/><rect x="0" y="3" width="9" height="1"/><rect x="0" y="4" width="10" height="1"/><rect x="0" y="5" width="10" height="1"/><rect x="1" y="6" width="2" height="1"/><rect x="4" y="6" width="2" height="1"/><rect x="7" y="6" width="2" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/></svg>
+          <div class="sc-name">城市规划师</div>
+          <div class="sc-owner">cxc</div>
+          <div class="sc-rating">★★★★★</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt>
+          <dd>评估场地、规划方案与政策约束，输出规划情景、用地选项、建模建议与面向社区的叙事。</dd>
+          <dt>技能</dt>
+          <dd>创意 + 社交、政策分析、情景对比</dd>
+          <dt>画像</dt>
+          <dd>高风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.21</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="sc-head">
+          <svg class="sc-avatar" viewBox="0 0 8 10" xmlns="http://www.w3.org/2000/svg" fill="#1B3FE5" style="opacity:0.85"><rect x="2" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="1" y="2" width="6" height="1"/><rect x="1" y="3" width="2" height="1"/><rect x="4" y="3" width="2" height="1"/><rect x="0" y="4" width="8" height="1"/><rect x="0" y="5" width="8" height="1"/><rect x="0" y="6" width="7" height="1"/><rect x="1" y="7" width="1" height="1"/><rect x="3" y="7" width="2" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="1" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="7" y="9" width="1" height="1"/></svg>
+          <div class="sc-name">深度研究分析师</div>
+          <div class="sc-owner">cxc</div>
+          <div class="sc-rating">★★★★★</div>
+        </div>
+        <dl>
+          <dt>职能描述</dt>
+          <dd>跨文档、网络与内部知识源查找并综合高质量证据，用于战略、技术或市场类问题。</dd>
+          <dt>技能</dt>
+          <dd>带注释索引、竞品矩阵、源材料包</dd>
+          <dt>画像</dt>
+          <dd>中等风险 · 就绪</dd>
+        </dl>
+        <div class="sc-foot">
+          <span class="sc-price">单次调用：¥0.14</span>
+          <span class="sc-vis">公开</span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn btn-sm btn-primary" style="flex:1;">雇佣</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="page-fab">最新版已加载</div>
+</section>
+
+<!-- ========================= AGENT BUILDER ========================= -->
+<section class="page" data-page="builder"
+  data-title="创建 Agent" data-sub="定义 agent 的身份、技能与权限。">
+  <div class="container">
+    <div class="builder-grid">
+      <aside class="schema-nav">
+        <h4>Schema 状态栏</h4>
+        <div class="schema-item active" data-bstep="1"><span class="n">01</span> Agent 名称</div>
+        <div class="schema-item" data-bstep="2"><span class="n">02</span> Agent 类别</div>
+        <div class="schema-item" data-bstep="3"><span class="n">03</span> Agent 类型</div>
+        <div class="schema-item" data-bstep="4"><span class="n">04</span> 描述</div>
+        <div class="schema-item" data-bstep="5"><span class="n">05</span> 技能 & 工具</div>
+        <div class="schema-item" data-bstep="6"><span class="n">06</span> 知识源</div>
+        <div class="schema-item" data-bstep="7"><span class="n">07</span> 权限</div>
+        <div class="schema-item" data-bstep="8"><span class="n">08</span> 安全围栏</div>
+        <div class="schema-item" data-bstep="9"><span class="n">09</span> API & 运行时</div>
+        <div class="schema-item" data-bstep="10"><span class="n">10</span> 审核 & 确认</div>
+      </aside>
+
+      <main class="builder-main">
+
+        <!-- STEP 1 -->
+        <div class="bstep" data-bstep-panel="1">
+          <h2>Agent 名称</h2>
+          <p class="hint">在 CKC 上构建的 agent 会获得专属编号 — 例如 <b style="color:var(--blue);">!Primus!</b></p>
+          <div class="builder-card">
+            <div class="row-2">
+              <div class="field">
+                <label>从模板开始</label>
+                <select class="store-select" style="width:100%;"><option>自定义（空白）</option><option>研究员</option><option>分析师</option></select>
+              </div>
+              <div class="field">
+                <label>所有者</label>
+                <input type="text" value="Relixz" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Agent 名称</label>
+              <input type="text" placeholder="例如：Primus" />
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>发布状态</label>
+                <select class="store-select" style="width:100%;"><option>草稿</option><option>已发布</option></select>
+              </div>
+              <div class="field">
+                <label>风险等级</label>
+                <select class="store-select" style="width:100%;"><option>中 — 引导 + 受限操作</option><option>低 — 只读</option><option>高 — 完全自主</option></select>
+              </div>
+            </div>
+            <div class="alert alert-warn">
+                <span class="alert-stamp">风险 · 中</span>
+                <span class="alert-body">兼顾引导与受限场景的平衡模式。高影响操作需审批。</span>
+              </div>
+              <div class="alert alert-info">
+                <span class="alert-stamp">推荐</span>
+                <span class="alert-body" style="color: rgb(27, 31, 40)">平衡 + 响应策略 + 灰度发布 + 日志监控。</span>
+              </div>
+            <div class="hint">→ 你的 agent 将以 <b>!AgentName!</b> 形式被识别</div>
+          </div>
+          <div class="builder-foot">
+            <span></span>
+            <button class="btn btn-primary" onclick="bstep(2)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="bstep" data-bstep-panel="2" style="display:none;">
+          <h2>Agent 类别</h2>
+          <p class="hint">选择 agent 主要负责的领域。</p>
+          <div class="class-grid">
+            <div class="class-tile" onclick="pickTile(this)">
+              <b>创意 & 空间</b><span>设计与规划工作流</span>
+            </div>
+            <div class="class-tile on" onclick="pickTile(this)">
+              <b>研究 & 构建</b><span>产品、代码与分析</span>
+            </div>
+            <div class="class-tile" onclick="pickTile(this)">
+              <b>GTM & 服务</b><span>销售、客服、增长</span>
+            </div>
+            <div class="class-tile" onclick="pickTile(this)">
+              <b>运营 & 风控</b><span>合规、财务、法务</span>
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(1)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(3)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="bstep" data-bstep-panel="3" style="display:none;">
+          <h2>Agent 类型</h2>
+          <p class="hint">决定谁可以雇佣或看到这个 agent。</p>
+          <div class="type-grid">
+            <div class="type-tile on" onclick="pickType(this, false)">
+              <h5><span class="tag">启用</span> 公开 · 可被雇佣</h5>
+              <p>允许其他用户雇佣此 agent，该 agent 会出现在 Agent 商城中，不再仅归单个用户所有。</p>
+            </div>
+            <div class="type-tile restricted" onclick="pickType(this, true)">
+              <h5><span class="tag">未启用</span> 私有</h5>
+              <p>仅创建者可访问。本地会存储一份文件，便于离线使用。仅当用户在线时该 agent 完全可用。</p>
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(2)">← 上一步</button>
+            <button class="btn" onclick="bstep(10)">跳转到审核</button>
+            <button class="btn btn-primary" onclick="bstep(4)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Agent Description -->
+        <div class="bstep" data-bstep-panel="4" style="display:none;">
+          <h2>Agent 描述</h2>
+          <p class="hint">描述这个 agent 的目标、主要职能与适用场景。</p>
+          <div class="builder-card">
+            <div class="field">
+              <label>用途 / 目标</label>
+              <textarea class="form-input" id="agent-description-input" rows="5" placeholder="描述这个 agent 做什么，主要职能、目标与边界…" style="width:100%; resize:vertical;"></textarea>
+            </div>
+            <p class="hint" id="template-desc-hint" style="display:none;">已根据模板预填描述，可在发布前修改。</p>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(3)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(5)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 5: Skills & Tools -->
+        <div class="bstep" data-bstep-panel="5" style="display:none;">
+          <h2>技能 & 工具</h2>
+          <p class="hint">选择 agent 可调用的技能和外部工具。可跳过此步，之后再编辑。</p>
+          <div class="builder-card">
+            <div class="hint" style="margin-bottom:10px;">点击选择，再次点击取消。</div>
+            <div class="skills-grid">
+              <div class="skill-chip" onclick="this.classList.toggle('on')">连接 Notion</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">Whisper 语音</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">URL 抓取</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">Spotify 播放器</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">Slack</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">GitHub</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">Discord</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">代码生成</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">Obsidian</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">摘要</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">网页搜索</div>
+              <div class="skill-chip" onclick="this.classList.toggle('on')">数据分析</div>
+            </div>
+            <div class="field" style="margin-top:14px;">
+              <label>标签（用逗号分隔）</label>
+              <input class="form-input" id="agent-tags-input" placeholder="例如：研究、合规、自动化" />
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(4)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(6)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 6: Knowledge Sources -->
+        <div class="bstep" data-bstep-panel="6" style="display:none;">
+          <h2>知识源</h2>
+          <p class="hint">可选 — 现在就添加参考资料，或在第一次草稿运行后再补。</p>
+          <div class="builder-card">
+            <div class="field">
+              <label>上传文档或粘贴 URL</label>
+              <textarea class="form-input" id="agent-knowledge-input" rows="4" placeholder="粘贴 URL、上传文件、或连接数据源…" style="width:100%; resize:vertical;"></textarea>
+            </div>
+            <div class="upload-row">
+              <input id="agent-knowledge-files" type="file" multiple style="display:none;" />
+              <button class="btn btn-sm" onclick="document.getElementById('agent-knowledge-files').click()">上传文档</button>
+              <span class="upload-meta" id="agent-upload-summary">未选择文件。</span>
+            </div>
+            <div class="field" style="margin-top:14px;">
+              <label>交接对象（用逗号分隔）</label>
+              <input class="form-input" id="agent-handoff-input" placeholder="例如：产品策略师、数据分析师" />
+            </div>
+            <p class="hint">交接对象是 agent 在置信度低、被策略阻止、或需要专家时可路由的备选协作者。</p>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(5)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(7)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 7: Permissions & Approval -->
+        <div class="bstep" data-bstep-panel="7" style="display:none;">
+          <h2>权限 & 审批策略</h2>
+          <p class="hint">在执行前配置分发与审批行为。</p>
+          <div class="builder-card">
+            <div class="field">
+              <label>协作模式</label>
+              <select class="store-select" style="width:100%;" id="agent-permission-select">
+                <option value="public">启用 — 对所有 OCTO 用户可见</option>
+                <option value="private">未启用 — 仅创建者可见</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>审批策略</label>
+              <select class="store-select" style="width:100%;" id="agent-approval-select">
+                <option value="draft_only">仅草稿 — 不实际执行外部动作</option>
+                <option value="approval_required">需审批后执行</option>
+                <option value="blocked">阻止所有外部动作</option>
+              </select>
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(6)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(8)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 8: Safety Guardrails & Tool Rights -->
+        <div class="bstep" data-bstep-panel="8" style="display:none;">
+          <h2>安全围栏 & 工具权限</h2>
+          <p class="hint">定义 agent 可做与不可做的事。OCTO 策略会在私有启用或商城上架前对每一次请求做合规检查。</p>
+          <div class="builder-card">
+            <div class="alert alert-info">
+              <span class="alert-stamp">推荐</span>
+              <span class="alert-body" style="color: rgb(27, 31, 40)">已启用推荐默认值。你可以修改这些配置，但 OCTO 策略评估仍会在启用 / 上架前执行。</span>
+            </div>
+            <div class="field">
+              <label>允许的动作</label>
+              <input class="form-input" id="agent-allowed-input" value="读取文件、生成摘要、网页搜索" />
+            </div>
+            <div class="field">
+              <label>禁止的动作</label>
+              <input class="form-input" id="agent-prohibited-input" value="删除文件、发起金融交易、冒充身份" />
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>工具读取范围</label>
+                <input class="form-input" id="agent-tool-read-input" value="文档、政策、看板" />
+              </div>
+              <div class="field">
+                <label>工具写入范围</label>
+                <input class="form-input" id="agent-tool-write-input" value="草稿、摘要" />
+              </div>
+            </div>
+            <div class="field">
+              <label>受限工具</label>
+              <input class="form-input" id="agent-tool-restricted-input" value="对外发布、账户更新" />
+            </div>
+            <div class="field">
+              <label>兜底行为</label>
+              <select class="store-select" style="width:100%;" id="agent-fallback-select">
+                <option value="ask_clarifying_question">向用户提澄清问题</option>
+                <option value="defer_to_human">移交给人</option>
+                <option value="safe_stop">安全终止</option>
+              </select>
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(7)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(9)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 9: API & Runtime -->
+        <div class="bstep" data-bstep-panel="9" style="display:none;">
+          <h2>API & 运行时</h2>
+          <p class="hint">选择推理供应商与模型。每次调用的成本会自动计算。</p>
+          <div class="builder-card">
+            <div class="row-2">
+              <div class="field">
+                <label>供应商</label>
+                <select class="store-select" style="width:100%;" id="agent-provider-select">
+                  <option value="tokenhub" selected>腾讯云 TokenHub</option>
+                  <option value="anthropic">Anthropic（Claude）</option>
+                  <option value="openai">OpenAI（ChatGPT）</option>
+                  <option value="google">Google（Gemini）</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="mistral">Mistral</option>
+                  <option value="groq">Groq · 免费</option>
+                  <option value="cerebras">Cerebras · 免费</option>
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="xai">xAI（Grok）</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>模型</label>
+                <select class="store-select" style="width:100%;" id="agent-model-select">
+                  <option>混元 Hy3 (preview)</option>
+                  <option>DeepSeek-V4-Flash</option>
+                  <option>llama-3.3-70b-versatile</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>API Key</label>
+              <div class="apikey-row">
+                <input class="form-input apikey-input" id="agent-api-key-input" type="password" placeholder="粘贴 key…" autocomplete="off" />
+                <button class="btn btn-sm" onclick="(function(b){var i=document.getElementById('agent-api-key-input'); var hid=i.type==='password'; i.type=hid?'text':'password'; b.textContent=hid?'隐藏':'显示';})(this)">显示</button>
+              </div>
+            </div>
+            <div class="alert alert-info" id="provider-help">
+              <span class="alert-body" style="color: rgb(27, 31, 40)">由 腾讯云 TokenHub 提供 · 已接入 ADP。Key 可在 ADP 控制台 → 凭证管理 中获取。</span>
+            </div>
+            <div class="field" style="margin-top:14px;">
+              <label>用 OpenClaw 接管 / 控制 agent</label>
+              <div class="apikey-row">
+                <input class="form-input apikey-input" id="openclaw-endpoint" placeholder="OpenClaw 端点（可选）" />
+                <button class="btn btn-sm" onclick="document.getElementById('openclaw-status').textContent='已连接 ✓';">连接 OpenClaw</button>
+              </div>
+              <p class="hint" id="openclaw-status">未连接。</p>
+            </div>
+            <p class="hint" style="margin-top:6px;">商城预估单价：<b style="color:#0E8E5C;">¥0.04</b> / 次调用</p>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(8)">← 上一步</button>
+            <button class="btn btn-primary" onclick="bstep(10)">审核 →</button>
+          </div>
+        </div>
+
+        <!-- STEP 10: Review & confirm -->
+        <div class="bstep" data-bstep-panel="10" style="display:none;">
+          <h2>审核 & 确认</h2>
+          <p class="hint">发布前再核对一遍 agent 配置。</p>
+          <div class="review-trail">
+            <span>所有者：Relixz</span><span class="sep">·</span>
+            <span>来源：自定义</span><span class="sep">·</span>
+            <span>中等风险</span><span class="sep">·</span>
+            <span>3 项技能</span><span class="sep">·</span>
+            <span>仅草稿</span><span class="sep">·</span>
+            <span>公开</span>
+          </div>
+          <div class="review-cards">
+            <div class="review-card">
+              <b>Agent 身份</b>
+              <div>已构建：<span class="ok">Primus</span></div>
+              <div>已有 agent：无</div>
+            </div>
+            <div class="review-card">
+              <b>安全围栏</b>
+              <div>权限：已审核</div>
+            </div>
+            <div class="review-card">
+              <b>API 运行时</b>
+              <div>Key 已校验</div>
+            </div>
+            <div class="review-card">
+              <b>Agent 协议</b>
+              <div>灰度发布</div>
+              <div>反馈：工具使用</div>
+              <div>通知正常</div>
+            </div>
+            <div class="review-card">
+              <b>审核 & 确认</b>
+              <div>可发布</div>
+            </div>
+          </div>
+          <div class="builder-foot">
+            <button class="btn" onclick="bstep(9)">← 上一步</button>
+            <button class="btn btn-publish" onclick="alert('Agent 已发布 ✓'); nav('store');">发布 agent ✓</button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= ABOUT ========================= -->
+<section class="page" data-page="about" data-screen-label="关于"
+  data-title="关于" data-sub="Nodex 是什么、为谁而做。">
+  <div class="container">
+    <div class="info-grid">
+      <div class="info-main">
+        <div class="s-label">§ 关于 · v0.8.5</div>
+        <h1 class="info-h1">一个让人类派发 agent、又始终留在回路中的工作区。</h1>
+        <p class="info-lead">
+          Nodex 是多 agent 协同层。你写下想完成的事，Nodex 挑选合适的 agent 并行执行，
+          并在关键节点暂停下来等你审批。
+        </p>
+
+        <div class="info-row">
+          <div class="info-cell">
+            <div class="info-k">适用人群</div>
+            <div class="info-v">用任务而非 prompt 思考的研究者、设计师与运营者。</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-k">阶段</div>
+            <div class="info-v">本地优先 Beta · v0.8.5 · TT 内部版 · 2026 年 4 月</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-k">许可</div>
+            <div class="info-v">开源内核 — Agent 运行时 MIT 协议，托管商城为闭源。</div>
+          </div>
+        </div>
+
+        <h2 class="info-h2">原则</h2>
+        <ol class="info-ol">
+          <li><b>意图先于指令。</b>告诉 Nodex 完成的样子，规划交给 agent。</li>
+          <li><b>监督是特性，不是阻碍。</b>审批节点呈现 diff，而不是弹窗。</li>
+          <li><b>始终有回执。</b>每次动作都展示模型、成本与产出的工件。</li>
+        </ol>
+      </div>
+      <aside class="info-side">
+        <div class="info-card">
+          <div class="info-card-h">团队</div>
+          <ul class="mini-list">
+            <li><span class="ml-dot"></span><span class="ml-name">cxc</span><span class="ml-meta">创始人 · 设计</span></li>
+            <li><span class="ml-dot"></span><span class="ml-name">storexxt</span><span class="ml-meta">运行时</span></li>
+            <li><span class="ml-dot"></span><span class="ml-name">rlx</span><span class="ml-meta">研究</span></li>
+          </ul>
+        </div>
+        <div class="info-card">
+          <div class="info-card-h">资金背景</div>
+          <div class="muted">自筹资金，暂无外部投资者。</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= CONTACT ========================= -->
+<section class="page" data-page="contact" data-screen-label="联系我们"
+  data-title="联系我们" data-sub="与团队取得联系。">
+  <div class="container">
+    <div class="info-grid">
+      <div class="info-main">
+        <div class="s-label">§ 联系我们</div>
+        <h1 class="info-h1">打个招呼吧。</h1>
+        <p class="info-lead">Bug 反馈、功能建议、合作洽谈、或仅仅是好奇 — 选择下方任一渠道。</p>
+
+        <div class="contact-grid">
+          <div class="contact-card">
+            <div class="info-k">技术支持</div>
+            <div class="contact-v"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="35464045455a4741755b5a51504d1b5c5a">[email&#160;protected]</a></div>
+            <div class="muted">1 个工作日内回复。</div>
+          </div>
+          <div class="contact-card">
+            <div class="info-k">媒体合作</div>
+            <div class="contact-v"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d5a5a7b0a6a695bbbab1b0adfbbcba">[email&#160;protected]</a></div>
+            <div class="muted">媒体资料包 · v0.8 品牌资源。</div>
+          </div>
+          <div class="contact-card">
+            <div class="info-k">商务合作</div>
+            <div class="contact-v"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="68000d0404072806070c0d10460107">[email&#160;protected]</a></div>
+            <div class="muted">Agent 供应商、第三方集成。</div>
+          </div>
+          <div class="contact-card">
+            <div class="info-k">办公地点</div>
+            <div class="contact-v">麻省 · 剑桥</div>
+            <div class="muted">仅接受预约。</div>
+          </div>
+        </div>
+
+        <h2 class="info-h2">留言给我们</h2>
+        <div class="row-2">
+          <div class="field"><label>你的名字</label><input type="text" placeholder="全名" /></div>
+          <div class="field"><label>邮箱</label><input type="email" placeholder="you@domain.com" /></div>
+        </div>
+        <div class="field"><label>主题</label>
+          <select class="store-select" style="width:100%;">
+            <option>一般咨询</option><option>Bug 反馈</option><option>功能建议</option><option>商务合作</option>
+          </select>
+        </div>
+        <div class="field"><label>留言内容</label>
+          <textarea rows="5" placeholder="想说点什么？"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm">发送留言</button>
+      </div>
+      <aside class="info-side">
+        <div class="info-card">
+          <div class="info-card-h">系统状态</div>
+          <div class="info-v"><span class="dot-ok"></span> 全部系统正常</div>
+          <div class="muted" style="margin-top:6px;">上次故障：尚未发生（自 2026-03-12 起）。</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-h">社区</div>
+          <ul class="mini-list">
+            <li><span class="ml-dot"></span><span class="ml-name">Discord</span><span class="ml-meta">约 1.2k 成员</span></li>
+            <li><span class="ml-dot"></span><span class="ml-name">GitHub</span><span class="ml-meta">nodex-io/runtime</span></li>
+            <li><span class="ml-dot"></span><span class="ml-name">更新日志</span><span class="ml-meta">/changelog</span></li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FAQ ========================= -->
+<section class="page" data-page="faq" data-screen-label="常见问题"
+  data-title="常见问题" data-sub="常见问题解答。">
+  <div class="container">
+    <div class="s-label">§ FAQ</div>
+    <h1 class="info-h1" style="margin-bottom:24px;">常见问题，逐个解答。</h1>
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary><span class="faq-q">"雇佣 agent" 和 "创建 agent" 的区别？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">"雇佣"是从公开商城里选一个已经调好的 agent，附带评价和明确的单次调用成本。"创建"则是构建你自有的 agent — 身份、技能、工具、权限全由你定义。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">我的数据存在哪里？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">你的 prompt、产出与 API Key 默认仅保存在浏览器（本地优先）。每个工作区可选择启用云端同步，启用后采用端到端加密。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">我可以使用自己的模型 API Key 吗？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">可以。设置 → API Key。Claude、Anthropic、OpenAI 的 key 都支持。Nodex 通过你提供的 key 转发调用，不会上传到 Nodex 服务器。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">人工审批（HITL）怎么工作？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">每个 agent 都可以声明审批节点 — 在这些位置它会暂停并请求确认。任务页会展示对应的 diff 或产物，你可以行内批准、修改或拒绝。同意后 agent 会从该节点继续执行。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">使用费用怎么算？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">Nodex 本体在 Beta 阶段免费。你只为模型调用（通过你的 provider key）和商城中的付费 agent 付费。每个任务都有实时费用计量条和你自定义的预算上限。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">可以离线运行 agent 吗？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">Nodex 外壳支持离线运行。依赖云端模型的 agent 当然需要联网 — 但 Nodex 会维护队列，恢复连接后自动重试；如果你在设置里配置了本地 Llama 实例，也可以直接路由到本地。</div>
+      </details>
+      <details class="faq-item">
+        <summary><span class="faq-q">谁能看到我创建的 agent？</span><span class="faq-toggle">+</span></summary>
+        <div class="faq-a">默认不可见。Agent 在你显式发布到商城前都是私有的。即使是共享团队，也仅限于你的工作区内，除非你主动邀请。</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= VERSION TOAST ========================= -->
+<div class="version-update-toast" id="versionToast">
+  <b>主分支最新更新</b>
+  v0.8.5 · TT · local · 2026-04-05 20:00 GMT-4<br/>
+  [UTC: 2026-04-06 00:00 UTC]
+</div>
+
+<!-- ========================= SCRIPT ========================= -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const TITLES = {
+  home:      { title: "首页",          sub: "提交意图 · 招募 agents · 受控交付" },
+  "new-task":{ title: "新任务",        sub: "描述你的意图，OCTO 会自动路由给合适的 agents" },
+  login:     { title: "欢迎回来",      sub: "登录你的 Nodex 工作区。" },
+  tasks:     { title: "任务列表",      sub: "跟踪任务、管理账户设置" },
+  task:      { title: "任务详情",      sub: "本任务的时间线、agent 与回执。" },
+  "task-hitl": { title: "任务详情",    sub: "等你在第 3 步做出决策。" },
+  settings:  { title: "个人档案",      sub: "跟踪任务、管理账户设置" },
+  store:     { title: "Agent 商城",    sub: "发现并雇佣社区构建的 agent。" },
+  builder:   { title: "创建 Agent",    sub: "定义 agent 的身份、技能与权限。" },
+  about:     { title: "关于",          sub: "Nodex 是什么、为谁而做。" },
+  contact:   { title: "联系我们",      sub: "与团队取得联系。" },
+  faq:       { title: "常见问题",      sub: "常见问题解答。" }
+};
+
+// nav highlight maps secondary pages back onto a top-level tab
+const NAV_MAP = {
+  home:'home', 'new-task':'new-task', tasks:'tasks',
+  settings:'settings', login:'settings',
+  store:'agent', builder:'agent',
+  about:'menu', contact:'menu', faq:'menu',
+  task:'tasks', 'task-hitl':'tasks'
+};
+
+function nav(page) {
+  if (!TITLES[page]) return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.querySelector(`.page[data-page="${page}"]`);
+  if (target) target.classList.add('active');
+
+  const meta = TITLES[page];
+  document.querySelector('[data-page-title]').textContent = meta.title;
+  document.querySelector('[data-page-sub]').textContent = meta.sub;
+
+  // highlight top nav (handles tabs, avatar, and dropdown triggers)
+  const navKey = NAV_MAP[page] || page;
+  document.querySelectorAll('.topnav [data-nav]').forEach(a => {
+    a.classList.toggle('active', a.dataset.nav === page);
+  });
+  document.querySelectorAll('.tn-drop').forEach(d => {
+    d.classList.toggle('active', d.dataset.drop === navKey);
+  });
+
+  // home-mode body class for cream/cobalt marketing chrome
+  document.body.classList.toggle('home-mode', page === 'home' || page === 'new-task');
+
+  // save
+  try { localStorage.setItem('nodex:page', page); } catch(e){}
+  if (location.hash !== '#/' + page) location.hash = '#/' + page;
+  window.scrollTo({top: 0, behavior: 'instant'});
+}
+
+// Hash router
+function routeFromHash() {
+  const m = (location.hash || '').match(/^#\/([a-z-]+)$/);
+  const page = m ? m[1] : (localStorage.getItem('nodex:page') || 'home');
+  nav(page);
+}
+
+document.querySelectorAll('.topnav [data-nav]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    nav(a.dataset.nav);
+    // close any open dropdown after navigating
+    document.querySelectorAll('.tn-drop.open').forEach(d => d.classList.remove('open'));
+  });
+});
+
+// Topbar dropdowns (+Agent, Menu) — click to toggle, click-outside to close
+document.querySelectorAll('.tn-drop > .tn-trigger').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const drop = btn.parentElement;
+    const wasOpen = drop.classList.contains('open');
+    document.querySelectorAll('.tn-drop.open').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) drop.classList.add('open');
+    btn.setAttribute('aria-expanded', String(!wasOpen));
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tn-drop')) {
+    document.querySelectorAll('.tn-drop.open').forEach(d => {
+      d.classList.remove('open');
+      const t = d.querySelector('.tn-trigger');
+      if (t) t.setAttribute('aria-expanded', 'false');
+    });
+  }
+});
+
+window.addEventListener('hashchange', routeFromHash);
+document.addEventListener('DOMContentLoaded', routeFromHash);
+routeFromHash();
+
+// Theme toggle
+const root = document.documentElement;
+try {
+  const saved = localStorage.getItem('nodex:theme');
+  if (saved === 'dark') root.setAttribute('data-theme', 'dark');
+} catch(e) {}
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const cur = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', cur);
+  document.getElementById('themeToggle').textContent = cur === 'dark' ? 'LIGHT MODE' : 'DARK MODE';
+  try { localStorage.setItem('nodex:theme', cur); } catch(e){}
+});
+if (root.getAttribute('data-theme') === 'dark') {
+  document.getElementById('themeToggle').textContent = 'LIGHT MODE';
+}
+
+// Home actions
+function goToTask(kind) {
+  if (kind === 'enter') {
+    nav('new-task');
+    return;
+  }
+  const ta = document.getElementById('homePrompt');
+  const text = (ta && ta.value || '').trim();
+  if (!text) { if (ta) ta.focus(); return; }
+  releaseTask(text);
+}
+
+// --- Sticker memo-wall ---
+function makeTaskId() {
+  const n = 253 + Math.floor(Math.random() * 40);
+  return 'T-0' + n;
+}
+function randTilt() {
+  return (Math.random() * 6 - 3).toFixed(2) + 'deg';
+}
+function releaseTask(text) {
+  const card = document.querySelector('.newtask-card');
+  if (card) {
+    // compute flight end toward tasks nav tab (top-right-ish of where sticker board lives)
+    const cardRect = card.getBoundingClientRect();
+    const endX = -cardRect.left + window.innerWidth * 0.08;
+    const endY = -cardRect.top + window.innerHeight * 0.15;
+    card.style.setProperty('--fx-mid-x', (endX * 0.5) + 'px');
+    card.style.setProperty('--fx-end-x', endX + 'px');
+    card.classList.add('releasing');
+  }
+  const newId = makeTaskId();
+  const title = text.length > 120 ? text.slice(0, 117) + '…' : text;
+  setTimeout(() => {
+    // navigate to tasks page
+    nav('tasks');
+    // insert sticker at front
+    const wall = document.getElementById('stickerWall');
+    if (wall) {
+      const el = document.createElement('div');
+      el.className = 'sticker needs landing';
+      el.style.setProperty('--tilt', randTilt());
+      el.dataset.nav = 'task-hitl';
+      el.dataset.id = newId;
+      el.innerHTML = `
+        <div class="sticker-eyebrow"><span class="tid">#${newId}</span><span>刚刚</span></div>
+        <h3 class="sticker-title">${escapeHtml(title)}</h3>
+        <div class="sticker-meta">
+          <div class="row"><span class="sticker-status">派发中</span></div>
+          <div class="row">正在选择 agent…</div>
+        </div>
+      `;
+      wall.insertBefore(el, wall.firstChild);
+      attachStickerHandlers(el);
+      updateTaskCounts();
+      applyTaskFilter();
+      // clear textarea + reset card
+      const ta = document.getElementById('homePrompt');
+      if (ta) ta.value = '';
+      if (card) { card.classList.remove('releasing'); card.style.animation = ''; }
+    }
+  }, 750);
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Drag-to-rearrange (free position within wall) + click to open
+function attachStickerHandlers(el) {
+  let down = null;
+  let moved = false;
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('a,button')) return;
+    el.setPointerCapture(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    const wall = el.parentElement;
+    const wallRect = wall.getBoundingClientRect();
+    down = {
+      x: e.clientX, y: e.clientY,
+      offX: e.clientX - rect.left, offY: e.clientY - rect.top,
+      wallLeft: wallRect.left, wallTop: wallRect.top
+    };
+    moved = false;
+    // Fix element's current flex position as absolute, so rest of wall keeps layout
+    if (el.style.position !== 'absolute') {
+      el.style.position = 'absolute';
+      el.style.left = (rect.left - wallRect.left) + 'px';
+      el.style.top = (rect.top - wallRect.top) + 'px';
+      el.style.margin = '0';
+    }
+    el.classList.add('dragging');
+  });
+  el.addEventListener('pointermove', e => {
+    if (!down) return;
+    if (Math.abs(e.clientX - down.x) > 3 || Math.abs(e.clientY - down.y) > 3) moved = true;
+    if (moved) {
+      el.style.left = (e.clientX - down.wallLeft - down.offX) + 'px';
+      el.style.top  = (e.clientY - down.wallTop  - down.offY) + 'px';
+    }
+  });
+  el.addEventListener('pointerup', e => {
+    if (!down) return;
+    el.classList.remove('dragging');
+    el.releasePointerCapture(e.pointerId);
+    const wasMoved = moved;
+    down = null; moved = false;
+    if (wasMoved) {
+      persistStickerPositions();
+    } else {
+      // treat as click → open task
+      const page = el.dataset.nav || 'task';
+      nav(page);
+    }
+  });
+  el.addEventListener('pointercancel', () => { el.classList.remove('dragging'); down = null; moved = false; });
+}
+function persistStickerPositions() {
+  const wall = document.getElementById('stickerWall');
+  if (!wall) return;
+  const map = {};
+  wall.querySelectorAll('.sticker').forEach(s => {
+    if (s.style.position === 'absolute') {
+      map[s.dataset.id || s.textContent.slice(0,40)] = {
+        left: s.style.left, top: s.style.top,
+        tilt: s.style.getPropertyValue('--tilt')
+      };
+    }
+  });
+  try { localStorage.setItem('nodex:sticker-pos', JSON.stringify(map)); } catch(e){}
+}
+function restoreStickerPositions() {
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem('nodex:sticker-pos') || '{}'); } catch(e){}
+  const wall = document.getElementById('stickerWall');
+  if (!wall) return;
+  // Only apply if wall is currently visible and we have something to restore
+  const keys = Object.keys(map);
+  if (!keys.length) return;
+  wall.querySelectorAll('.sticker').forEach(s => {
+    const id = s.dataset.id;
+    if (map[id]) {
+      s.style.position = 'absolute';
+      s.style.left = map[id].left;
+      s.style.top = map[id].top;
+      s.style.margin = '0';
+      if (map[id].tilt) s.style.setProperty('--tilt', map[id].tilt);
+    }
+  });
+}
+function initStickers() {
+  document.querySelectorAll('.sticker').forEach(el => attachStickerHandlers(el));
+  restoreStickerPositions();
+  updateTaskCounts();
+}
+
+// ---- Tasks toolbar (filter tabs + search) ----
+function getStickerKind(s) {
+  if (s.classList.contains('finished')) return 'finished';
+  if (s.classList.contains('needs')) return 'needs';
+  if (s.classList.contains('working')) return 'working';
+  return 'all';
+}
+function updateTaskCounts() {
+  const wall = document.getElementById('stickerWall');
+  if (!wall) return;
+  const stickers = wall.querySelectorAll('.sticker');
+  const counts = { all: stickers.length, finished: 0, needs: 0, working: 0 };
+  stickers.forEach(s => {
+    const k = getStickerKind(s);
+    if (k !== 'all') counts[k] = (counts[k] || 0) + 1;
+  });
+  document.querySelectorAll('.tt-count').forEach(c => {
+    const k = c.dataset.count;
+    if (k in counts) c.textContent = counts[k];
+  });
+}
+function applyTaskFilter() {
+  const wall = document.getElementById('stickerWall');
+  if (!wall) return;
+  const filterEl = document.querySelector('.tt-tab.active');
+  const filter = filterEl ? filterEl.dataset.filter : 'all';
+  const q = (document.getElementById('taskSearch')?.value || '').trim().toLowerCase();
+  let visible = 0, total = 0;
+  wall.querySelectorAll('.sticker').forEach(s => {
+    total++;
+    const k = getStickerKind(s);
+    const text = s.textContent.toLowerCase() + ' ' + (s.dataset.id || '').toLowerCase();
+    const matchesFilter = (filter === 'all') || (k === filter);
+    const matchesQuery = !q || text.includes(q);
+    const show = matchesFilter && matchesQuery;
+    s.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const hint = document.getElementById('taskSearchHint');
+  if (hint) hint.textContent = q ? `${visible} match${visible === 1 ? '' : 'es'}` : '';
+}
+document.querySelectorAll('.tt-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tt-tab').forEach(x => {
+      x.classList.remove('active');
+      x.setAttribute('aria-selected', 'false');
+    });
+    t.classList.add('active');
+    t.setAttribute('aria-selected', 'true');
+    applyTaskFilter();
+  });
+});
+const _taskSearchEl = document.getElementById('taskSearch');
+if (_taskSearchEl) {
+  _taskSearchEl.addEventListener('input', applyTaskFilter);
+}
+// Call on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initStickers);
+} else {
+  initStickers();
+}
+function scrollToStart() {
+  const el = document.querySelector('.home-below');
+  if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 40, behavior: 'smooth' });
+}
+function useExample(btn) {
+  document.getElementById('homePrompt').value = btn.querySelector('span').textContent;
+  goToTask();
+}
+
+// Builder
+function bstep(n) {
+  document.querySelectorAll('[data-bstep-panel]').forEach(p => p.style.display = 'none');
+  const panel = document.querySelector(`[data-bstep-panel="${n}"]`);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('[data-bstep]').forEach(it => {
+    const i = parseInt(it.dataset.bstep, 10);
+    it.classList.toggle('active', i === n);
+    it.classList.toggle('done', i < n);
+  });
+  document.querySelectorAll('[data-bstep]').forEach(el => {
+    el.addEventListener('click', (e) => bstep(parseInt(el.dataset.bstep, 10)), { once: true });
+  });
+}
+document.querySelectorAll('[data-bstep]').forEach(el => {
+  el.addEventListener('click', () => bstep(parseInt(el.dataset.bstep, 10)));
+});
+function pickTile(el) {
+  el.parentElement.querySelectorAll('.class-tile').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+function pickType(el) {
+  el.parentElement.querySelectorAll('.type-tile').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// Hide version toast after a bit
+setTimeout(() => {
+  const t = document.getElementById('versionToast');
+  if (t) t.style.transition = 'opacity 600ms'; t.style.opacity = '0';
+  setTimeout(() => t && t.remove(), 700);
+}, 6000);
+
+// ==================== Inverse-blend cursor dot ====================
+(function initCursor(){
+  const dot = document.getElementById('cursorDot');
+  if (!dot) return;
+  // OCTO iframe: skip the inverse-blend cursor entirely so the system cursor stays visible
+  if (document.documentElement.classList.contains('in-octo-frame')) {
+    dot.style.display = 'none';
+    return;
+  }
+  let x = window.innerWidth / 2, y = window.innerHeight / 2;
+  let tx = x, ty = y;
+  document.documentElement.classList.add('has-inverse-cursor');
+  window.addEventListener('pointermove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+  }, { passive: true });
+  window.addEventListener('pointerleave', () => { dot.style.opacity = '0'; });
+  window.addEventListener('pointerenter', () => { dot.style.opacity = '1'; });
+  // grow on interactive elements
+  const isInteractive = (el) => el && el.closest && el.closest('a, button, input, textarea, select, [role="button"], .chip, .eg');
+  document.addEventListener('pointerover', (e) => {
+    dot.classList.toggle('is-hot', !!isInteractive(e.target));
+  });
+  function tick(){
+    x += (tx - x) * 0.35;
+    y += (ty - y) * 0.35;
+    dot.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ==================== Interactive dot-network (home hero right) ====================
+(function initDotNet(){
+  const canvas = document.getElementById('dotnet');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const COBALT = '#1B3FE5';
+
+  let W = 560, H = 560, DPR = 1;
+  let dots = [];
+  let gridStep = 48;
+  const mouse = { x: -9999, y: -9999, active: false };
+  const hub = { x: W/2, y: H/2 };
+  let startTs = 0;
+
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    canvas.width  = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildGrid();
+  }
+
+  function buildGrid(){
+    dots = [];
+    // aim for ~7 dots across the shorter dim
+    gridStep = Math.round(Math.min(W, H) / 7);
+    const cols = Math.floor(W / gridStep);
+    const rows = Math.floor(H / gridStep);
+    const ox = (W - (cols - 1) * gridStep) / 2;
+    const oy = (H - (rows - 1) * gridStep) / 2;
+    for (let i = 0; i < cols; i++){
+      for (let j = 0; j < rows; j++){
+        dots.push({
+          x: ox + i * gridStep,
+          y: oy + j * gridStep,
+          gx: i, gy: j,
+        });
+      }
+    }
+  }
+
+  function draw(ts){
+    if (!startTs) startTs = ts;
+    const t = (ts - startTs) * 0.001;
+
+    // target hub = mouse, or slow drift when idle
+    let tx, ty;
+    if (mouse.active){
+      tx = mouse.x; ty = mouse.y;
+    } else {
+      tx = W/2 + Math.cos(t * 0.35) * gridStep * 1.4;
+      ty = H/2 + Math.sin(t * 0.48) * gridStep * 1.0;
+    }
+    hub.x += (tx - hub.x) * 0.14;
+    hub.y += (ty - hub.y) * 0.14;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const INFL = gridStep * 2.6; // ray / scale radius
+    const BASE_R = Math.max(1.4, gridStep * 0.055); // small dot size
+    const MAX_R  = gridStep * 0.22;                 // max scaled dot size
+
+    // pass 1 — draw rays (hub -> dots inside influence)
+    ctx.strokeStyle = COBALT;
+    ctx.lineWidth = 1;
+    for (const d of dots){
+      const dx = d.x - hub.x, dy = d.y - hub.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < INFL && dist > 4){
+        const k = 1 - dist / INFL; // 0..1
+        ctx.globalAlpha = 0.35 + k * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(hub.x, hub.y);
+        ctx.lineTo(d.x, d.y);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // pass 2 — draw dots (scaled by distance to hub)
+    ctx.fillStyle = COBALT;
+    for (const d of dots){
+      const dx = d.x - hub.x, dy = d.y - hub.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      let r = BASE_R;
+      if (dist < INFL){
+        const k = 1 - dist / INFL;
+        r = BASE_R + (MAX_R - BASE_R) * Math.pow(k, 0.85);
+      }
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // pass 3 — hub itself (large)
+    const hubR = gridStep * 0.32;
+    // soft halo
+    const g = ctx.createRadialGradient(hub.x, hub.y, hubR * 0.6, hub.x, hub.y, hubR * 2.8);
+    g.addColorStop(0, 'rgba(27,63,229,0.28)');
+    g.addColorStop(1, 'rgba(27,63,229,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(hub.x, hub.y, hubR * 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    // core
+    ctx.fillStyle = COBALT;
+    ctx.beginPath();
+    ctx.arc(hub.x, hub.y, hubR, 0, Math.PI * 2);
+    ctx.fill();
+
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('pointermove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - r.left);
+    mouse.y = (e.clientY - r.top);
+    mouse.active = true;
+  });
+  canvas.addEventListener('pointerleave', () => { mouse.active = false; });
+
+  // pointer events from the entire home-right area to feel more responsive
+  const zone = document.querySelector('.home-right');
+  if (zone){
+    zone.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = (e.clientX - r.left);
+      mouse.y = (e.clientY - r.top);
+      mouse.active = true;
+    });
+    zone.addEventListener('pointerleave', () => { mouse.active = false; });
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+
+</body>
+</html>
