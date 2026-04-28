@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OCTO Design System · Component Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500&display=swap">
+<link rel="stylesheet" href="./tokens.css">
+<style>
+  /* ============================================================================
+     This file is a LIVE REFERENCE. Open it in a browser to see every component
+     rendered with the OCTO design system. Copy markup + CSS into your own app.
+     ============================================================================ */
+
+  body { padding: 48px; max-width: 960px; margin: 0 auto; }
+  section { margin-bottom: 64px; }
+  h2.section-title {
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 6px;
+  }
+  .section-sub {
+    font-size: 12px;
+    color: var(--ink-mut);
+    margin: 0 0 24px;
+  }
+  .specimen {
+    background: var(--paper-2);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--r-xl);
+    padding: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .specimen-stack { flex-direction: column; align-items: stretch; }
+  .specimen-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+
+  /* ============================================================================
+     1. BUTTONS
+     ============================================================================ */
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--r-md);
+    padding: 8px 16px;
+    border: 1px solid var(--paper-line-strong);
+    background: var(--paper-input);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background var(--t-base), border-color var(--t-base), transform 0.06s;
+    letter-spacing: 0.2px;
+  }
+  .btn:hover  { background: var(--hover-soft); }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--cobalt);
+    color: #fff;
+    border-color: var(--cobalt);
+    box-shadow: var(--shadow-cobalt);
+  }
+  .btn-primary:hover { filter: brightness(1.05); }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink-mut);
+  }
+  .btn-ghost:hover { background: var(--hover-soft); color: var(--ink); }
+
+  .btn-danger {
+    color: var(--warn);
+    border-color: rgba(180,35,24,0.3);
+  }
+  .btn-danger:hover { background: rgba(180,35,24,0.06); }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ============================================================================
+     2. CHIPS · TABS · BADGES (all pill-shaped)
+     ============================================================================ */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
+    background: var(--paper-input);
+    border: 1px solid var(--paper-line);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-mut);
+    cursor: pointer;
+    transition: background var(--t-base), color var(--t-base);
+    user-select: none;
+  }
+  .chip:hover {
+    background: var(--cobalt-soft);
+    color: var(--cobalt);
+    border-color: var(--cobalt-mid);
+  }
+  .chip.is-on {
+    background: var(--cobalt);
+    color: #fff;
+    border-color: var(--cobalt);
+    box-shadow: var(--shadow-cobalt);
+  }
+
+  /* tab pill — used for filter rows like "全部 / 已完成 / 需审批" */
+  .tab-row { display: flex; gap: 6px; padding: 4px 0 10px; border-bottom: 1px solid var(--paper-line); }
+  .tab {
+    padding: 7px 14px;
+    border-radius: var(--r-pill);
+    background: transparent;
+    border: 0;
+    color: var(--ink-mut);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: background var(--t-base), color var(--t-base);
+  }
+  .tab:hover { background: var(--cobalt-soft); color: var(--cobalt); }
+  .tab.active {
+    background: var(--cobalt);
+    color: #fff;
+    box-shadow: var(--shadow-cobalt);
+  }
+  .tab-count {
+    min-width: 18px; height: 18px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background: var(--hover-mid);
+    color: var(--ink-mut);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tab.active .tab-count { background: rgba(255,255,255,0.22); color: #fff; }
+
+  /* ============================================================================
+     3. INPUTS
+     ============================================================================ */
+  .input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--paper-input);
+    border: 1px solid var(--paper-line-strong);
+    border-radius: var(--r-md);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    outline: 0;
+    transition: border-color var(--t-base), box-shadow var(--t-base);
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:focus {
+    border-color: rgba(16,75,225,0.5);
+    box-shadow: 0 0 0 3px var(--cobalt-soft);
+  }
+
+  /* search variant with leading icon */
+  .input-search-wrap { position: relative; }
+  .input-search-wrap .ic {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    color: var(--ink-faint);
+    pointer-events: none;
+  }
+  .input-search-wrap .input { padding-left: 34px; }
+
+  /* ============================================================================
+     4. CARDS
+     ============================================================================ */
+  .card {
+    background: var(--paper-2);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+  }
+  .card-elevated { box-shadow: var(--shadow-2); }
+  .card h3 { font-family: var(--serif); font-size: 18px; margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--ink-mut); font-size: 13px; }
+
+  /* sticker card — paper texture, slight rotation */
+  .sticker {
+    background: #FBF7E8;
+    border-radius: 4px;
+    padding: 14px 16px;
+    transform: rotate(-1.5deg);
+    box-shadow: 0 4px 10px rgba(11,18,32,0.06);
+    max-width: 280px;
+    cursor: grab;
+  }
+  .sticker:nth-child(2n) { transform: rotate(2deg); background: #FCE9B8; }
+  .sticker .eyebrow { display: block; margin-bottom: 6px; }
+  .sticker h4 { font-family: var(--sans); margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+
+  /* ============================================================================
+     5. CONVERSATION COMPONENTS — the heart of OCTO
+     ============================================================================ */
+  .conv {
+    background: var(--paper);
+    padding: 24px;
+    border-radius: var(--r-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* user message bubble */
+  .msg-user {
+    align-self: flex-end;
+    max-width: 78%;
+    background: var(--paper-2);
+    padding: 10px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--paper-line);
+    font-size: 14.5px;
+  }
+
+  /* agent block container */
+  .msg-agent { display: flex; flex-direction: column; gap: 10px; max-width: 100%; }
+  .msg-agent .mark {
+    width: 22px; height: 18px;
+    color: var(--cobalt);
+    margin-bottom: 2px;
+    image-rendering: pixelated;
+  }
+
+  /* thinking — collapsed mono block */
+  details.thinking {
+    background: transparent;
+    border-left: 2px solid var(--paper-line-strong);
+    padding: 6px 14px;
+  }
+  details.thinking summary {
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+    color: var(--ink-mut);
+    text-transform: uppercase;
+    font-weight: 500;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  details.thinking summary::before {
+    content: '▸';
+    font-size: 9px;
+    transition: transform 0.15s;
+  }
+  details.thinking[open] summary::before { transform: rotate(90deg); }
+  details.thinking summary::-webkit-details-marker { display: none; }
+  details.thinking .body {
+    margin-top: 8px;
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--ink-mut);
+    line-height: var(--lh-loose);
+  }
+  .pulse-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cobalt);
+    display: inline-block;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  /* action card — search / knowledge / tool / edit / code */
+  .action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--paper-2);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background var(--t-base);
+  }
+  .action:hover { background: var(--hover-soft); }
+  .action .ico {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--paper-input);
+    border: 1px solid var(--paper-line);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--ink-mut);
+  }
+  .action .ico svg { width: 14px; height: 14px; }
+  .action.is-search    .ico { color: var(--ok);       background: rgba(14,142,92,0.10);  border-color: rgba(14,142,92,0.25); }
+  .action.is-knowledge .ico { color: var(--magenta);  background: rgba(122,79,190,0.10); border-color: rgba(122,79,190,0.22); }
+  .action.is-tool      .ico { color: var(--cobalt);   background: var(--cobalt-soft);    border-color: var(--cobalt-mid); }
+  .action.is-edit      .ico { color: var(--highlight);background: rgba(198,138,20,0.10); border-color: rgba(198,138,20,0.22); }
+  .action.is-code      .ico { color: var(--ink);      background: var(--paper); }
+  .action .meta { flex: 1; min-width: 0; }
+  .action .title { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .action .sub { font-size: 11px; color: var(--ink-mut); font-family: var(--mono); }
+  .action .arrow { color: var(--ink-faint); font-size: 14px; }
+
+  /* code block */
+  .code-block {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: var(--lh-loose);
+  }
+  .code-block-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 14px;
+    background: var(--code-head);
+    border-bottom: 1px solid var(--code-line);
+    color: var(--code-mut);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .code-block pre { margin: 0; padding: 14px 18px; overflow-x: auto; }
+  .tk-kw  { color: var(--tk-kw); }
+  .tk-fn  { color: var(--tk-fn); }
+  .tk-str { color: var(--tk-str); }
+  .tk-com { color: var(--tk-com); font-style: italic; }
+
+  /* source pill */
+  .src-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--paper-2);
+    border: 1px solid var(--paper-line);
+    border-radius: var(--r-pill);
+    font-size: 11.5px;
+    color: var(--ink-mut);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .src-pill:hover { background: var(--hover-soft); color: var(--ink); }
+
+  /* ============================================================================
+     6. HITL APPROVAL CARD — red dashed outline
+     ============================================================================ */
+  .hitl {
+    border: 2px dashed var(--warn);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    background: rgba(180,35,24,0.04);
+  }
+  .hitl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .hitl-stamp {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background: var(--warn);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .hitl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .hitl-grid > div .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .hitl-grid > div .v { font-size: 13px; color: var(--ink); }
+  .hitl-actions { display: flex; gap: 8px; }
+
+  /* ============================================================================
+     7. ALERT / INFO BANNER
+     ============================================================================ */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    background: var(--cobalt-soft);
+    border: 1px solid var(--cobalt-mid);
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .alert-stamp {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--cobalt);
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .alert-warn  { background: rgba(198,138,20,0.08); border-color: rgba(198,138,20,0.25); }
+  .alert-warn .alert-stamp { color: var(--highlight); }
+
+</style>
+</head>
+<body>
+
+<h1 style="font-family:var(--serif); font-weight:400; font-size:36px; margin:0 0 8px;">OCTO Design System</h1>
+<p style="color:var(--ink-mut); font-size:13.5px; margin: 0 0 48px;">
+  Component reference · 复制 markup + CSS 到你的应用即可。所有组件依赖 <code>tokens.css</code>。
+</p>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">1 · Buttons</h2>
+  <p class="section-sub">主按钮用 cobalt 实心；次按钮 outline；ghost 用于密集列表的轻量动作。</p>
+  <div class="specimen">
+    <button class="btn btn-primary">主操作</button>
+    <button class="btn">次操作</button>
+    <button class="btn btn-ghost">幽灵</button>
+    <button class="btn btn-danger">危险</button>
+    <button class="btn btn-sm btn-primary">小号</button>
+    <button class="btn btn-sm">小号次</button>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">2 · Chips & Tabs</h2>
+  <p class="section-sub">默认状态 = 浅奶白底 + cobalt 边描；hover = 浅 cobalt 背景；active = 实心 cobalt + 阴影。</p>
+  <div class="specimen">
+    <span class="chip">默认 chip</span>
+    <span class="chip">混元 Hy3 preview</span>
+    <span class="chip is-on">已选中</span>
+    <span class="chip is-on">实心</span>
+  </div>
+  <div class="specimen specimen-stack">
+    <div class="specimen-meta">FILTER TABS · 数字 chip 跟随 active 状态</div>
+    <div class="tab-row">
+      <button class="tab active">全部 <span class="tab-count">4</span></button>
+      <button class="tab">已完成 <span class="tab-count">2</span></button>
+      <button class="tab">需审批 <span class="tab-count">1</span></button>
+      <button class="tab">进行中 <span class="tab-count">1</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">3 · Inputs</h2>
+  <p class="section-sub">奶白底 + 浅边；focus 时 cobalt 描边 + 浅 cobalt 光晕。Search 变体把图标绝对定位在左侧。</p>
+  <div class="specimen specimen-stack">
+    <input class="input" placeholder="今天想做点什么？">
+    <div class="input-search-wrap">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="input" placeholder="搜索任务、agent、ID…">
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">4 · Cards</h2>
+  <p class="section-sub">普通 card 用 paper-2 底；sticker card 用浅黄 / 蓝 / 粉，轻微旋转，给"便签板"感。</p>
+  <div class="specimen">
+    <div class="card" style="flex:1;">
+      <h3>RFP 起草</h3>
+      <p>从知识库拉销售制度 → 调用 RFP 技能模板 → 起草初稿 → 等你审阅。</p>
+    </div>
+    <div class="sticker">
+      <span class="eyebrow">#T-0248 · 2 小时前</span>
+      <h4>分析 50 份财务记录的支出模式</h4>
+      <span style="font-size:11px; color:var(--ok);">● 已完成 · 3 个 agent</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">5 · Conversation Lane</h2>
+  <p class="section-sub">每次 agent 回应：思考折叠 → 动作卡（5 类 icon 编码）→ 章鱼图标 + 文本 → 代码块 → 来源 chip。</p>
+  <div class="conv">
+
+    <div class="msg-user">分析 50 份财务记录的支出模式</div>
+
+    <div class="msg-agent">
+      <details class="thinking" open>
+        <summary><span class="pulse-dot"></span> 思考 · 已用 1.2s</summary>
+        <div class="body">
+          用户希望对企业财务数据做模式分析。我应该先调 ADP 知识库找历史报告 → 调"数据分析"技能模板 → 起草输出。
+        </div>
+      </details>
+
+      <div class="action is-knowledge">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        <div class="meta">
+          <div class="title">检索 ADP 知识库 · TT-销售组</div>
+          <div class="sub">找到 8 份相关材料</div>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="action is-tool">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.7 6.3 2.3 2.3-9.7 9.7-3.3 1 1-3.3 9.7-9.7z"/><path d="M13 5.4 18.6 11"/></svg></span>
+        <div class="meta">
+          <div class="title">调用 ADP.skill / data_analysis</div>
+          <div class="sub">已加载技能模板 v3</div>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="action is-edit">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        <div class="meta">
+          <div class="title">起草分析报告 v1</div>
+          <div class="sub">5 个章节 · 1,240 字</div>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+
+      <div class="mark">
+        <svg viewBox="0 0 13 10" fill="currentColor" shape-rendering="crispEdges"><rect x="4" y="0" width="5" height="1"/><rect x="3" y="1" width="7" height="1"/><rect x="2" y="2" width="9" height="1"/><rect x="2" y="3" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="8" y="3" width="3" height="1"/><rect x="2" y="4" width="9" height="1"/><rect x="1" y="5" width="11" height="1"/><rect x="0" y="6" width="2" height="1"/><rect x="3" y="6" width="7" height="1"/><rect x="11" y="6" width="2" height="1"/></svg>
+      </div>
+
+      <div style="font-size:14.5px; line-height:1.7;">
+        基于 ADP 知识库 8 份材料 + 数据分析技能模板，已生成 Q2 财务支出模式分析报告。
+        主要发现：差旅占比持续上升（同比 +18%），工具订阅碎片化严重（27 个 SaaS 账单跨 4 个团队）。
+      </div>
+
+      <div class="code-block">
+        <div class="code-block-head">
+          <span>Python</span>
+          <span style="text-transform:none;">复制</span>
+        </div>
+<pre><span class="tk-com"># 支出聚类 + 异常检测</span>
+<span class="tk-kw">from</span> octo <span class="tk-kw">import</span> AnalysisSkill
+result = AnalysisSkill.<span class="tk-fn">cluster</span>(
+    records=<span class="tk-str">"q2_spending.csv"</span>,
+    flag_anomalies=<span class="tk-kw">True</span>
+)</pre>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <a class="src-pill">📊 Q1 复盘.docx</a>
+        <a class="src-pill">📋 Q2 OKR 跟踪表.xlsx</a>
+        <a class="src-pill">🗂️ ADP.skill / data_analysis · v3</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">6 · HITL Approval Gate</h2>
+  <p class="section-sub">高成本 / 高风险动作必经此卡。红色 dashed 边框；预算 / 影响面 / 回滚 三件信息；四按钮决策。</p>
+  <div class="specimen specimen-stack">
+    <div class="hitl">
+      <div class="hitl-head">
+        <span class="hitl-stamp">HITL · 需审批</span>
+        <span style="font-family:var(--mono); font-size:11px; color:var(--ink-mut);">step 4 / 5 · 对外发送邮件</span>
+      </div>
+      <div class="hitl-grid">
+        <div><div class="k">本步预算</div><div class="v">¥ 2.40 · 估</div></div>
+        <div><div class="k">影响面</div><div class="v">12 位收件人 · 外部</div></div>
+        <div><div class="k">回滚方案</div><div class="v">召回 + 二次邮件致歉</div></div>
+      </div>
+      <div class="hitl-actions">
+        <button class="btn btn-primary">Accept</button>
+        <button class="btn">Decline</button>
+        <button class="btn btn-ghost">Pause</button>
+        <button class="btn btn-ghost">Replace</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">7 · Alerts</h2>
+  <p class="section-sub">长方块横幅，左侧 stamp + 右侧描述。Cobalt 用于普通信息提示，amber 用于温和警示。</p>
+  <div class="specimen specimen-stack">
+    <div class="alert">
+      <span class="alert-stamp">推荐</span>
+      <span>已启用推荐默认值。可修改这些配置，但策略评估仍会在启用前执行。</span>
+    </div>
+    <div class="alert alert-warn">
+      <span class="alert-stamp">风险 · 中</span>
+      <span>兼顾引导与受限场景的平衡模式。高影响操作需审批。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================ -->
+<section>
+  <h2 class="section-title">8 · Type Specimens</h2>
+  <p class="section-sub">三层字体：sans 主、serif 大字 / hero / 标题、mono 标签 / 代码 / 元信息。</p>
+  <div class="specimen specimen-stack">
+    <div class="hero-title">下午好，Raine。</div>
+    <h2 style="font-family:var(--serif); font-size:22px; font-weight:400; margin:0;">Raine，今天设计点什么？</h2>
+    <div style="font-size:14.5px;">这是正文 — Inter + PingFang SC 主 sans 字体。1.55 行高。</div>
+    <div class="eyebrow">§ EYEBROW · MONO LABEL</div>
+    <code style="font-family:var(--mono); font-size:12.5px;">octo_dispatch.py · main</code>
+  </div>
+</section>
+
+<footer style="padding-top:32px; border-top:1px solid var(--paper-line); color:var(--ink-faint); font-size:11px; font-family:var(--mono); letter-spacing:0.4px;">
+  OCTO DESIGN SYSTEM · v1.0 · 沙纯钰 (Raine) · 2026-04
+</footer>
+
+</body>
+</html>

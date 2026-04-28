@@ -1,0 +1,165 @@
+/* ============================================================================
+   OCTO · Design System · Tokens
+   ----------------------------------------------------------------------------
+   Source: OCTO workbench (https://github.com/rainscyy/OCTO)
+   Visual lineage: 奶油纸 / 钴蓝 / 墨色 / 警示红 + sticker pixel + retro mono
+   License: same as parent project (OFL fonts, MIT for code)
+   ============================================================================
+   USAGE:
+   1. Import this file in your global stylesheet:
+        @import url('./tokens.css');
+        OR
+        <link rel="stylesheet" href="./tokens.css">
+
+   2. Reference tokens in your components via var(--token-name).
+      Don't hard-code colors / type / spacing — always use variables.
+
+   3. Fonts must also be loaded once (Google Fonts or self-hosted):
+        Inter (sans) · Fraunces (display serif) · IBM Plex Mono (mono) ·
+        Noto Serif SC (CJK serif fallback)
+   ============================================================================ */
+
+:root {
+  /* ===== PAPER / SURFACE ===== */
+  --paper:           #FAF7F1;   /* main background — warm cream */
+  --paper-2:         #FDFBF7;   /* sidebar / cards — slightly lighter */
+  --paper-input:     #FFFDF9;   /* input fields — almost white */
+  --paper-line:      rgba(11,18,32,0.08);   /* hairline borders */
+  --paper-line-strong: rgba(11,18,32,0.14); /* stronger borders */
+
+  /* ===== INK / TEXT ===== */
+  --ink:             #0B1220;             /* primary text, near-black */
+  --ink-mut:         rgba(11,18,32,0.55); /* secondary text */
+  --ink-faint:       rgba(11,18,32,0.32); /* tertiary, hints, eyebrows */
+
+  /* ===== ACCENT · COBALT ===== */
+  --cobalt:          #104BE1;             /* primary brand / interaction */
+  --cobalt-soft:     rgba(16,75,225,0.08);  /* hover bg / outline-soft */
+  --cobalt-mid:      rgba(16,75,225,0.18);  /* outline-strong / active bg */
+  --cobalt-shadow:   rgba(16,75,225,0.28);  /* button shadow */
+
+  /* ===== SEMANTIC ===== */
+  --warn:            #B42318;   /* red — destructive / HITL gates */
+  --ok:              #0E8E5C;   /* green — confirmed / success */
+  --info:            #1B3FE5;   /* alt cobalt for retro Nodex screens */
+  --highlight:       #C68A14;   /* amber — edits / warnings */
+  --magenta:         #7A4FBE;   /* purple — knowledge / ADP K-class */
+
+  /* ===== HOVER STATES ===== */
+  --hover-soft:      rgba(11,18,32,0.035);
+  --hover-mid:       rgba(11,18,32,0.06);
+
+  /* ===== TYPOGRAPHY ===== */
+  --sans:  'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+           system-ui, -apple-system, sans-serif;
+  --serif: 'Fraunces', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --mono:  'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Type scale — modular, mostly used at face value */
+  --fs-xs:    10px;    /* eyebrow / mono labels */
+  --fs-sm:    11.5px;  /* small meta */
+  --fs-base:  13px;    /* body default */
+  --fs-md:    14.5px;  /* msg text */
+  --fs-lg:    16px;    /* card title */
+  --fs-xl:    22px;    /* section heading */
+  --fs-hero:  44px;    /* greeting / hero */
+
+  /* Letter spacing for monospace eyebrows */
+  --ls-mono: 0.4px;
+
+  /* Line height */
+  --lh-tight: 1.2;
+  --lh-body:  1.55;
+  --lh-loose: 1.75;
+
+  /* ===== SPACING ===== */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  22px;
+  --sp-6:  32px;
+  --sp-7:  48px;
+  --sp-8:  64px;
+
+  /* ===== RADIUS ===== */
+  --r-sm:   6px;     /* small chips, dense pills */
+  --r-md:   10px;    /* buttons, action cards */
+  --r-lg:   12px;    /* main cards, inputs (large) */
+  --r-xl:   14px;    /* containers */
+  --r-pill: 999px;   /* chips, tabs, badges */
+
+  /* ===== SHADOW ===== */
+  --shadow-1: 0 1px 2px rgba(11,18,32,0.06);
+  --shadow-2: 0 1px 3px rgba(11,18,32,0.08);
+  --shadow-cobalt: 0 2px 6px rgba(16,75,225,0.28);
+
+  /* ===== TRANSITION ===== */
+  --t-fast: 0.12s ease;
+  --t-base: 0.15s ease;
+  --t-slow: 0.18s ease;
+
+  /* ===== LAYOUT ===== */
+  --sidebar-w: 280px;
+  --content-max: 720px;
+  --canvas-w:    460px;
+}
+
+/* ============================================================================
+   GLOBAL TYPE BASELINE
+   Apply once at <body> level to inherit defaults.
+   ============================================================================ */
+
+body {
+  font-family: var(--sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.3px; }
+code, pre, kbd, samp { font-family: var(--mono); }
+
+/* mono "eyebrow" / section label pattern (used heavily across OCTO) */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-mono);
+  text-transform: uppercase;
+  color: var(--ink-mut);
+  font-weight: 500;
+}
+
+/* serif hero greeting */
+.hero-title {
+  font-family: var(--serif);
+  font-size: var(--fs-hero);
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  line-height: var(--lh-tight);
+  color: var(--ink);
+}
+
+/* ============================================================================
+   DARK CODE SURFACE TOKENS
+   When you need a dark code block — keep this isolated palette.
+   Don't use these for general UI — only inline / block code, terminals.
+   ============================================================================ */
+
+:root {
+  --code-bg:    #0F1419;
+  --code-head:  #161B22;
+  --code-text:  #C9D1D9;
+  --code-mut:   rgba(201,209,217,0.55);
+  --code-line:  rgba(255,255,255,0.06);
+
+  /* token highlight */
+  --tk-kw:   #FF7B72;   /* keyword */
+  --tk-fn:   #D2A8FF;   /* function name */
+  --tk-str:  #A5D6FF;   /* string */
+  --tk-com:  #8B949E;   /* comment */
+  --tk-num:  #79C0FF;   /* number */
+}
